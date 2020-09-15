@@ -1,0 +1,2 @@
+# amis
+amis vscode plugin
