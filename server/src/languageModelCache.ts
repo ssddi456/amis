@@ -42,37 +42,21 @@ export function getLanguageModelCache<T>(
 			const languageId = document.languageId;
 			const languageModelInfo = languageModels[document.uri];
 
-			logger.log(() => `get or set cache
-document.uri ${document.uri}
-version ${version}
-languageId ${languageId}`);
 
 			if (languageModelInfo && languageModelInfo.version >= version && languageModelInfo.languageId === languageId) {
 				languageModelInfo.cTime = Date.now();
-
-				logger.log(() => `get cache
-document.uri ${document.uri}
-version ${version} ${languageModelInfo && languageModelInfo.version}
-languageId ${languageId} ${languageModelInfo && languageModelInfo.languageId}
-content ${document. .is(languageModelInfo.languageModel) ? languageModelInfo.languageModel.getText() : '[...this is not language mode...]'}`)
 				return languageModelInfo.languageModel;
 			}
-			logger.log(() => ['do parse for', document.uri]);
+
 			const languageModel = parse(document);
-			logger.log(() => ['parsed   for', document.uri]);
-
-			logger.log(() => `set cache
-document.uri ${document.uri}
-version ${version} ${languageModelInfo && languageModelInfo.version}
-languageId ${languageId} ${languageModelInfo && languageModelInfo.languageId}
-content ${TextDocument.is(languageModel) ? languageModel.getText() : '[...this is not language mode...]'}`);
-
+			
 			languageModels[document.uri] = { languageModel, version, languageId, cTime: Date.now() };
 			if (!languageModelInfo) {
 				nModels++;
 			}
 
 			if (nModels === maxEntries) {
+				// LRU
 				let oldestTime = Number.MAX_VALUE;
 				let oldestUri = null;
 				for (const uri in languageModels) {

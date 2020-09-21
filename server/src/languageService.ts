@@ -27,8 +27,6 @@ export interface DocumentContext {
     resolveReference(ref: string, base?: string): string;
 }
 
-
-
 interface ValidationOptions {
     script: boolean;
 }

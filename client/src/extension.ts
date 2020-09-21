@@ -43,7 +43,6 @@ export function activate(context: ExtensionContext) {
 			{ scheme: 'file', language: 'javascriptreact' },
 			{ scheme: 'file', language: 'typescript' },
 			{ scheme: 'file', language: 'typescriptreact' },
-			{ scheme: 'file', language: 'json' },
 		],
 		synchronize: {
 			// Notify the server about file changes to '.clientrc files contained in the workspace
