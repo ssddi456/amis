@@ -1,18 +1,37 @@
 import * as ts from "typescript";
 
-
-
+import { createDocumentRegions, EmbeddedRegion } from '../../embeddedSupport';
 
 export function parseAmisJSON(content: string) {
 
-	const regions: string[] = [];
+	const regions: EmbeddedRegion<'json'>[] = [];
+
+	function makeLeadingBlankSpace(node: ts.ReadonlyTextRange) {
+		const leadingContent = content.slice(0, node.pos);
+		let ret = [];
+		for (let i = 0; i < leadingContent.length; i++) {
+			const element = leadingContent[i];
+			if (element != '\r' && element != '\n') {
+				ret.push(' ');
+			} else {
+				ret.push(element);
+			}
+		}
+		return ret.join('');
+	}
 
 	function getSourceInRange(node: ts.ReadonlyTextRange) {
-		return content.slice(node.pos, node.end);
+		return makeLeadingBlankSpace(node) + content.slice(node.pos, node.end);
 	}
 
 	function addCodeToRegion(node: ts.ReadonlyTextRange) {
-		regions.push(getSourceInRange(node));
+		regions.push({
+			start: node.pos,
+			end: node.end,
+			languageId: 'amisjson',
+			type: 'json',
+			text: getSourceInRange(node)
+		});
 	}
 	/**
 	 * 输出ast树状信息
@@ -20,37 +39,44 @@ export function parseAmisJSON(content: string) {
 	function nodeTypeReader<T extends ts.Node>(context: ts.TransformationContext) {
 		return function (rootNode: T) {
 			function visit(node: ts.Node): ts.VisitResult<ts.Node> {
-
 				if ((node as any).jsDoc) {
-					console.log("Visiting " + ts.SyntaxKind[node.kind]);
-
 					if (
 						(node as any).jsDoc.some((item: any) => item.comment && item.comment.trim() == 'amis')
 					) {
-						if (node.kind === ts.SyntaxKind.PropertyAssignment) {
-							console.log("-- Visiting " + ts.SyntaxKind[(node as ts.PropertyAssignment).initializer.kind]);
-
-							// if () {
-							// 	addCodeToRegion((node as ts.PropertyAssignment).initializer);
-							// }
-						} else if (node.kind == ts.SyntaxKind.ExportAssignment) {
-							if (ts.isObjectLiteralElementLike((node as ts.ExportAssignment).expression)) {
-								addCodeToRegion((node as ts.ExportAssignment).expression);
+						if (ts.isObjectLiteralElementLike(node)) {
+							if (ts.isPropertyAssignment(node)) {
+								if (ts.isObjectLiteralExpression(node.initializer)) {
+									addCodeToRegion((node as ts.PropertyAssignment).initializer);
+								}
 							}
+						} else if (ts.isExportAssignment(node)) {
+							if (ts.isObjectLiteralExpression(node.expression)) {
+								addCodeToRegion(node.expression);
+							}
+
 						} else if (node.kind == ts.SyntaxKind.FirstStatement) {
-							if ((node as any).declarationList) {
-								const firstDeclaration: ts.VariableDeclaration = (node as any).declarationList[0];
-								if (firstDeclaration && firstDeclaration.initializer && ts.isObjectLiteralElementLike(firstDeclaration.initializer)) {
-									addCodeToRegion(firstDeclaration.initializer);
+							const declarationList = (node as any).declarationList;
+
+							if (declarationList && ts.isVariableDeclarationList(declarationList)) {
+								const declaration = declarationList.declarations[0];
+								if (declaration && declaration.initializer && ts.isObjectLiteralExpression(declaration.initializer)) {
+									addCodeToRegion(declaration.initializer);
+								}
+							}
+
+						} else if (ts.isExpressionStatement(node)) {
+							const expression = node.expression;
+							if (ts.isBinaryExpression(expression)) {
+								if (ts.isObjectLiteralExpression(expression.right)) {
+									addCodeToRegion(expression.right);
 								}
 							}
 						} else {
-							console.log("Visiting " + ts.SyntaxKind[node.kind]);
+							console.log("other Visiting " + ts.SyntaxKind[node.kind]);
 						}
 					}
 				}
 				return ts.visitEachChild(node, visit, context);
-
 			}
 			return ts.visitNode(rootNode, visit);
 		}
@@ -61,3 +87,9 @@ export function parseAmisJSON(content: string) {
 
 	return regions;
 }
+
+
+export const getDocumentRegions = createDocumentRegions(
+	(document) => parseAmisJSON(document.getText()),
+	undefined,
+	'san');
