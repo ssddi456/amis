@@ -1,19 +1,22 @@
 import { Range, TextDocument } from 'vscode-languageserver-textdocument';
 import { logger } from './utils/logger';
 import { Position } from 'vscode-languageserver';
-
+import { URI } from 'vscode-uri';
+import * as path from 'path';
 
 export interface LanguageRange extends Range {
     languageId: string;
     attributeValue?: boolean;
 }
 
-export interface DocumentRegions {
+export interface DocumentRegions<T = EmbeddedType> {
     getEmbeddedDocument(languageId: string): TextDocument;
-    getEmbeddedDocumentByType(type: EmbeddedType): TextDocument;
-    getLanguageRangeByType(type: EmbeddedType): LanguageRange | undefined;
+    getEmbeddedDocumentByType(type: T): TextDocument;
+    getLanguageRangeByType(type: T): LanguageRange | undefined;
     getLanguageRanges(range: Range): LanguageRange[];
+    getRegionAtPosition(positon: Position): EmbeddedRegion;
     getLanguageAtPosition(position: Position): string;
+    getSubDocumentAtPosition(position: Position): TextDocument;
     getLanguagesInDocument(): string[];
     getImportedScripts(): string[];
 }
@@ -38,7 +41,7 @@ const defaultType: { [type: string]: string } = {
 export function createDocumentRegions(
     parser: (document: TextDocument) => EmbeddedRegion[],
     defaultTypeMap: { [type: string]: string } = defaultType,
-    defaultLanguageId: string = 'san',
+    defaultLanguageId: string = '',
 ): (document: TextDocument) => DocumentRegions {
 
     return function getDocumentRegions(document: TextDocument): DocumentRegions {
@@ -50,14 +53,13 @@ export function createDocumentRegions(
             getLanguageRangeByType: (type: string) => getLanguageRangeByType(document, regions, type),
             getEmbeddedDocument: (languageId: string) => getEmbeddedDocument(document, regions, languageId),
             getEmbeddedDocumentByType: (type: string) => getEmbeddedDocumentByType(document, regions, type),
+            getRegionAtPosition: (position: Position) => getRegionAtPosition(document, regions, position),
+            getSubDocumentAtPosition: (position: Position) => getSubDocumentAtPosition(document, regions, position),
             getLanguageAtPosition: (position: Position) => getLanguageAtPosition(document, regions, position),
             getLanguagesInDocument: () => getLanguagesInDocument(document, regions),
             getImportedScripts: () => importedScripts
         };
     }
-
-
-
 
     function getLanguageRanges(document: TextDocument, regions: EmbeddedRegion[], range: Range): LanguageRange[] {
         const result: LanguageRange[] = [];
@@ -72,7 +74,7 @@ export function createDocumentRegions(
                     result.push({
                         start: currentPos,
                         end: startPos,
-                        languageId: defaultLanguageId
+                        languageId: defaultLanguageId || document.languageId
                     });
                 }
                 const end = Math.min(region.end, endOffset);
@@ -93,14 +95,14 @@ export function createDocumentRegions(
             result.push({
                 start: currentPos,
                 end: endPos,
-                languageId: defaultLanguageId
+                languageId: defaultLanguageId || document.languageId
             });
         }
         return result;
     }
 
     function getLanguagesInDocument(document: TextDocument, regions: EmbeddedRegion[]): string[] {
-        const result = [defaultLanguageId];
+        const result = [defaultLanguageId || document.languageId];
         for (const region of regions) {
             if (region.languageId && result.indexOf(region.languageId) === -1) {
                 result.push(region.languageId);
@@ -109,31 +111,77 @@ export function createDocumentRegions(
         return result;
     }
 
-    function getLanguageAtPosition(document: TextDocument, regions: EmbeddedRegion[], position: Position): string {
+    function getRegionAtPosition(document: TextDocument, regions: EmbeddedRegion[], position: Position): EmbeddedRegion {
         const offset = document.offsetAt(position);
 
         logger.log(() => ['getLanguageAtPosition', position, offset]);
 
+        let lastRagionEnd = 0;
         for (const region of regions) {
             if (region.start <= offset) {
                 if (offset <= region.end) {
-                    return region.languageId;
+                    return region;
                 }
             } else {
+                lastRagionEnd = region.end;
                 break;
             }
         }
-        return defaultLanguageId;
+        return {
+            languageId: defaultLanguageId || document.languageId,
+            start: lastRagionEnd + 1,
+            end: document.getText().length,
+            type: defaultType,
+        };
+    }
+    function getLanguageAtPosition(document: TextDocument, regions: EmbeddedRegion[], position: Position): string {
+        return getRegionAtPosition(document, regions, position).languageId;
+    }
+
+    function makeLeadingBlankSpace(content: string, node: EmbeddedRegion) {
+        const leadingContent = content.slice(0, node.start);
+        let ret = [];
+        for (let i = 0; i < leadingContent.length; i++) {
+            const element = leadingContent[i];
+            if (element != '\r' && element != '\n') {
+                ret.push(' ');
+            } else {
+                ret.push(element);
+            }
+        }
+        return ret.join('');
+    }
+
+    function getDocumentContentOfRegion(document: TextDocument, region: EmbeddedRegion) {
+        if (region.text) {
+            return region.text;
+        }
+        const content = document.getText();
+        return makeLeadingBlankSpace(content, region) + content.substring(region.start, region.end);
+    }
+
+
+    function getSubDocumentAtPosition(document: TextDocument, regions: EmbeddedRegion[], position: Position): TextDocument {
+        const region = getRegionAtPosition(document, regions, position);
+        const index = regions.indexOf(region);
+        if (index === -1) {
+            return document;
+        }
+        const documentUrl = URI.file(document.uri);
+        const ext = path.extname(documentUrl.fsPath);
+        const newDocumentUrlPath = path.basename( documentUrl.fsPath, ext) + `.${region.languageId}_${index}` + ext;
+        const newDocumentUrl = URI.file(newDocumentUrlPath);
+        const result = getDocumentContentOfRegion(document, region);
+
+        return TextDocument.create(newDocumentUrl.toString(), region.languageId, document.version, result);
     }
 
     function getEmbeddedDocument(document: TextDocument, contents: EmbeddedRegion[], languageId: string): TextDocument {
-        const oldContent = document.getText();
         let result = '';
+
         for (const c of contents) {
             if (c.languageId === languageId) {
-                result = oldContent.substring(0, c.start).replace(/./g, ' ');
-                result += oldContent.substring(c.start, c.end);
-                break;
+                result = getDocumentContentOfRegion(document, c);
             }
         }
         return TextDocument.create(document.uri, languageId, document.version, result);
@@ -144,12 +192,11 @@ export function createDocumentRegions(
         contents: EmbeddedRegion[],
         type: string
     ): TextDocument {
-        const oldContent = document.getText();
         let result = '';
         for (const c of contents) {
             if (c.type === type) {
-                result = oldContent.substring(0, c.start).replace(/./g, ' ');
-                result += oldContent.substring(c.start, c.end);
+                result = getDocumentContentOfRegion(document, c);
+
                 return TextDocument.create(document.uri, c.languageId, document.version, result);
             }
         }

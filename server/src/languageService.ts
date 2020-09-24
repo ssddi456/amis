@@ -22,6 +22,7 @@ import { NULL_HOVER, NULL_COMPLETION, NULL_SIGNATURE } from './modes/nullMode';
 
 import { logger } from './utils/logger';
 import { TextDocument } from 'vscode-languageserver-textdocument';
+import { HandlerResult } from 'vscode-languageserver';
 
 export interface DocumentContext {
     resolveReference(ref: string, base?: string): string;
@@ -64,7 +65,7 @@ export function getShadowLS() {
             }
             return diagnostics;
         },
-        doComplete(doc: TextDocument, position: Position): CompletionList {
+        doComplete(doc: TextDocument, position: Position): HandlerResult<CompletionList | null, any> {
             const mode = languageModes.getModeAtPosition(doc, position);
             if (mode) {
                 if (mode.doComplete) {
@@ -73,14 +74,14 @@ export function getShadowLS() {
             }
             return NULL_COMPLETION;
         },
-        doResolve(doc: TextDocument, languageId: string, item: CompletionItem): CompletionItem {
+        doResolve(doc: TextDocument, languageId: string, item: CompletionItem): HandlerResult<CompletionItem | null, any> {
             const mode = languageModes.getMode(languageId);
             if (mode && mode.doResolve && doc) {
                 return mode.doResolve(doc, item);
             }
             return item;
         },
-        doHover(doc: TextDocument, position: Position): Hover {
+        doHover(doc: TextDocument, position: Position): HandlerResult<Hover | null, any> {
             const mode = languageModes.getModeAtPosition(doc, position);
             logger.log(() => ['do hover!!', mode!.getId()]);
 
@@ -93,14 +94,14 @@ export function getShadowLS() {
             }
             return NULL_HOVER;
         },
-        findDocumentHighlight(doc: TextDocument, position: Position): DocumentHighlight[] {
+        findDocumentHighlight(doc: TextDocument, position: Position): HandlerResult<DocumentHighlight[] | null, any> {
             const mode = languageModes.getModeAtPosition(doc, position);
             if (mode && mode.findDocumentHighlight) {
                 return mode.findDocumentHighlight(doc, position);
             }
             return [];
         },
-        findDefinition(doc: TextDocument, position: Position): Definition {
+        findDefinition(doc: TextDocument, position: Position): HandlerResult<Definition | null, any> {
             logger.log(() => ['do findDefinition', doc.uri]);
 
             const mode = languageModes.getModeAtPosition(doc, position);
@@ -109,48 +110,54 @@ export function getShadowLS() {
             }
             return [];
         },
-        findReferences(doc: TextDocument, position: Position): Location[] {
+        findReferences(doc: TextDocument, position: Position): HandlerResult<Location[] | null, any> {
             const mode = languageModes.getModeAtPosition(doc, position);
             if (mode && mode.findReferences) {
                 return mode.findReferences(doc, position);
             }
             return [];
         },
-        findDocumentLinks(doc: TextDocument, documentContext: DocumentContext): DocumentLink[] {
+        async findDocumentLinks(doc: TextDocument, documentContext: DocumentContext): Promise<DocumentLink[]> {
             const links: DocumentLink[] = [];
-            languageModes.getAllModesInDocument(doc).forEach(m => {
+            const modes = languageModes.getAllModesInDocument(doc);
+            for (let index = 0; index < modes.length; index++) {
+                const m = modes[index];
                 if (m.findDocumentLinks) {
-                    pushAll(links, m.findDocumentLinks(doc, documentContext));
+                    pushAll(links, await m.findDocumentLinks(doc, documentContext) || []);
                 }
-            });
+            }
             return links;
         },
-        findDocumentSymbols(doc: TextDocument): SymbolInformation[] {
+        async findDocumentSymbols(doc: TextDocument): Promise<SymbolInformation[]> {
             const symbols: SymbolInformation[] = [];
-            languageModes.getAllModesInDocument(doc).forEach(m => {
+            const modes = languageModes.getAllModesInDocument(doc);
+            for (let index = 0; index < modes.length; index++) {
+                const m = modes[index];
                 if (m.findDocumentSymbols) {
-                    pushAll(symbols, m.findDocumentSymbols(doc));
+                    pushAll(symbols, await m.findDocumentSymbols(doc) || []);
                 }
-            });
+            }
             return symbols;
         },
-        findDocumentColors(doc: TextDocument): ColorInformation[] {
+        async findDocumentColors(doc: TextDocument): Promise<ColorInformation[]> {
             const colors: ColorInformation[] = [];
-            languageModes.getAllModesInDocument(doc).forEach(m => {
+            const modes = languageModes.getAllModesInDocument(doc);
+            for (let index = 0; index < modes.length; index++) {
+                const m = modes[index];
                 if (m.findDocumentColors) {
-                    pushAll(colors, m.findDocumentColors(doc));
+                    pushAll(colors, await m.findDocumentColors(doc) || []);
                 }
-            });
+            }
             return colors;
         },
-        getColorPresentations(doc: TextDocument, color: Color, range: Range): ColorPresentation[] {
+        getColorPresentations(doc: TextDocument, color: Color, range: Range): HandlerResult<ColorPresentation[] | null, any> {
             const mode = languageModes.getModeAtPosition(doc, range.start);
             if (mode && mode.getColorPresentations) {
                 return mode.getColorPresentations(doc, color, range);
             }
             return [];
         },
-        doSignatureHelp(doc: TextDocument, position: Position): SignatureHelp {
+        doSignatureHelp(doc: TextDocument, position: Position): HandlerResult<SignatureHelp | null, any> {
             const mode = languageModes.getModeAtPosition(doc, position);
             if (mode && mode.doSignatureHelp) {
                 return mode.doSignatureHelp(doc, position);

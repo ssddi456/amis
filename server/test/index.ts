@@ -260,3 +260,31 @@ function test() {
 }`, { line: 4, character: 11 }, 'amisjson');
     })
 });
+
+
+describe('get amisjson hover at point', function () {
+
+
+    function testGetDocumentAtPoint(code: string, position: Position, languageId: string) {
+        const sourceFile = TextDocument.create('test://test/test.ts', 'typescript', 0, code);
+        const documentRegion = getDocumentRegions(sourceFile);
+        assert.equal(documentRegion.getLanguageAtPosition(position), languageId, 'languageId should equal');
+    }
+    it('get amisjson at object literal', function () {
+        testGetDocumentAtPoint(`
+function test() {
+    /** amis */
+    var obj6 = {
+        type: "page",
+        body: "declaration"
+    };
+
+    /** amis */
+    obj6 = {
+        type: "page",
+        body: "new value"
+    };
+}`, { line: 4, character: 11 }, 'amisjson');
+    })
+});
+

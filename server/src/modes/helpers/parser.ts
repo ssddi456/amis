@@ -92,4 +92,4 @@ export function parseAmisJSON(content: string) {
 export const getDocumentRegions = createDocumentRegions(
 	(document) => parseAmisJSON(document.getText()),
 	undefined,
-	'san');
+	undefined);

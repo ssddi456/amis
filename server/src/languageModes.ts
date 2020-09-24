@@ -23,24 +23,26 @@ import { getLanguageModelCache, LanguageModelCache } from './languageModelCache'
 import { logger } from './utils/logger';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { Color, ColorInformation, ColorPresentation } from 'vscode-languageserver';
-import { DocumentRegions, getDocumentRegions } from './embeddedSupport';
+import { DocumentRegions } from './embeddedSupport';
+import { getDocumentRegions } from './modes/helpers/parser';
+import { getAmisJsonMode } from './modes/amisJson';
 
 export interface LanguageMode {
     getId(): string;
     configure?(options: any): void;
     doValidation?(document: TextDocument): Diagnostic[];
-    doComplete?(document: TextDocument, position: Position): CompletionList;
-    doResolve?(document: TextDocument, item: CompletionItem): CompletionItem;
-    doHover?(document: TextDocument, position: Position): Hover;
-    doSignatureHelp?(document: TextDocument, position: Position): SignatureHelp;
-    findDocumentHighlight?(document: TextDocument, position: Position): DocumentHighlight[];
-    findDocumentSymbols?(document: TextDocument): SymbolInformation[];
-    findDocumentLinks?(document: TextDocument, documentContext: DocumentContext): DocumentLink[];
-    findDefinition?(document: TextDocument, position: Position): Definition;
-    findReferences?(document: TextDocument, position: Position): Location[];
-    format?(document: TextDocument, range: Range, options: FormattingOptions): TextEdit[];
-    findDocumentColors?(document: TextDocument): ColorInformation[];
-    getColorPresentations?(document: TextDocument, color: Color, range: Range): ColorPresentation[];
+    doComplete?(document: TextDocument, position: Position): Thenable<CompletionList | null>;
+    doResolve?(document: TextDocument, item: CompletionItem): Thenable<CompletionItem | null>;
+    doHover?(document: TextDocument, position: Position): Thenable<Hover | null>;
+    doSignatureHelp?(document: TextDocument, position: Position): Thenable<SignatureHelp | null>;
+    findDocumentHighlight?(document: TextDocument, position: Position): Thenable<DocumentHighlight[] | null>;
+    findDocumentSymbols?(document: TextDocument): Thenable<SymbolInformation[] | null>;
+    findDocumentLinks?(document: TextDocument, documentContext: DocumentContext): Thenable<DocumentLink[] | null>;
+    findDefinition?(document: TextDocument, position: Position): Thenable<Definition | null>;
+    findReferences?(document: TextDocument, position: Position): Thenable<Location[] | null>;
+    format?(document: TextDocument, range: Range, options: FormattingOptions): Thenable<TextEdit[] | null>;
+    findDocumentColors?(document: TextDocument): Thenable<ColorInformation[] | null>;
+    getColorPresentations?(document: TextDocument, color: Color, range: Range): Thenable<ColorPresentation[] | null>;
 
     onDocumentRemoved(document: TextDocument): void;
     dispose(): void;
@@ -63,15 +65,15 @@ export interface LanguageModeRange extends Range {
 
 export function getLanguageModes(workspacePath: string | null | undefined): LanguageModes {
     const documentRegions = getLanguageModelCache<DocumentRegions>(10, 60, document => getDocumentRegions(document));
-
+    const jsonMode = getAmisJsonMode(documentRegions, workspacePath);
     let modelCaches: LanguageModelCache<any>[] = [];
     modelCaches.push(documentRegions);
 
     let modes: { [k: string]: LanguageMode } = {
-		javascript: jsMode,
-		jsx: jsMode,
-        tsx: jsMode,
-        typescript: jsMode
+        javascript: jsonMode,
+        jsx: jsonMode,
+        tsx: jsonMode,
+        typescript: jsonMode
     };
 
     return {
@@ -100,7 +102,7 @@ export function getLanguageModes(workspacePath: string | null | undefined): Lang
             const result = [];
             for (const languageId of documentRegions.get(document).getLanguagesInDocument()) {
                 const mode = modes[languageId];
-                if (mode) {
+                if (mode && result.indexOf(mode) === -1) {
                     result.push(mode);
                 }
             }
@@ -110,7 +112,7 @@ export function getLanguageModes(workspacePath: string | null | undefined): Lang
             const result = [];
             for (const languageId in modes) {
                 const mode = modes[languageId];
-                if (mode) {
+                if (mode && result.indexOf(mode) === -1) {
                     result.push(mode);
                 }
             }
