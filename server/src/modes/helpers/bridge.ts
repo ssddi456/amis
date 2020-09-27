@@ -1,6 +1,8 @@
 import * as path from 'path';
 export const shadowJSONSurfix = '.__shadow_json__';
-export const shadowJSONSchema = '$schema: "https://houtai.baidu.com/v2/schemas/page.json"';
+export const shadowJSONSchemaKey = '$schema';
+export const shadowJSONSchemaValue = 'https://houtai.baidu.com/v2/schemas/page.json';
+export const shadowJSONSchemaPrefix = 'https://houtai.baidu.com/v2';
 
 
 export function isAmisJsonUrl( url: string) {

@@ -20,8 +20,8 @@ export const nullMode: LanguageMode = {
 	getId: () => '',
 	onDocumentRemoved() { },
 	dispose() { },
-	doHover: () => NULL_HOVER,
-	doComplete: () => NULL_COMPLETION,
-	doSignatureHelp: () => NULL_SIGNATURE,
-	findReferences: () => []
+	doHover: (...args: any[]) => NULL_HOVER,
+	doComplete: (...args: any[]) => NULL_COMPLETION,
+	doSignatureHelp: (...args: any[]) => NULL_SIGNATURE,
+	findReferences: (...args: any[]) => []
 };

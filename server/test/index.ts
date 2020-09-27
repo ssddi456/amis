@@ -4,13 +4,14 @@ import { assert } from "chai";
 
 import { getLanguageService, LanguageService, JSONSchema, ClientCapabilities } from 'vscode-json-languageservice';
 
-import { CompletionItemKind, CompletionList, MarkupContent, Position, TextEdit } from 'vscode-languageserver';
+import { CompletionItemKind, CompletionList, Hover, MarkupContent, Position, TextEdit } from 'vscode-languageserver';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
 import * as ts from 'typescript';
 import { logCodeAst } from '../src/utils/logger';
 import { getDocumentRegions, parseAmisJSON } from '../src/modes/helpers/parser';
 import { EmbeddedRegion } from '../src/embeddedSupport';
+import { getShadowLS } from '../src/languageService';
 
 interface ItemDescription {
     label: string;
@@ -263,12 +264,20 @@ function test() {
 
 
 describe('get amisjson hover at point', function () {
-
-
     function testGetDocumentAtPoint(code: string, position: Position, languageId: string) {
         const sourceFile = TextDocument.create('test://test/test.ts', 'typescript', 0, code);
         const documentRegion = getDocumentRegions(sourceFile);
         assert.equal(documentRegion.getLanguageAtPosition(position), languageId, 'languageId should equal');
+    }
+
+
+    async function testGetDocumentHoverAtPoint(code: string, position: Position, expected: Hover) {
+        const sourceFile = TextDocument.create('test://test/test.ts', 'typescript', 0, code);
+        const sls = getShadowLS();
+        sls.initialize(null);
+        const hover = await sls.doHover(sourceFile, position);
+        assert.deepEqual(hover, expected);
+        sls.dispose();
     }
     it('get amisjson at object literal', function () {
         testGetDocumentAtPoint(`
@@ -285,6 +294,77 @@ function test() {
         body: "new value"
     };
 }`, { line: 4, character: 11 }, 'amisjson');
+    });
+
+    it('get hover at object literal', async function () {
+        await testGetDocumentHoverAtPoint(`
+function test() {
+    /** amis */
+    var obj6 = {
+        type: "page",
+        body: "declaration"
+    };
+
+    /** amis */
+    obj6 = {
+        type: "page",
+        body: "new value"
+    };
+}`, { line: 4, character: 11 }, {
+            contents: ['指定为 page 渲染器。'],
+            range: { start: { line: 4, character: 8 }, end: { line: 4, character: 12 } }
+        });
+    });
+
+
+    it('get hover info for refed schema', async function () {
+        await testGetDocumentHoverAtPoint(`/** amis */
+export default {
+    "$schema": "https://houtai.baidu.com/v2/schemas/page.json#",
+    "title": "表单各种展示模式汇总",
+    "remark": "展示各种模式的 Form",
+    "body": [
+        {
+            "type": "grid",
+            "columns": []
+        }
+    ]
+}`,
+            {
+                line: 8,
+                character: 15
+            },
+            {
+                contents: ['列集合'],
+                range: { start: { line: 8, character: 12 }, end: { line: 8, character: 21 } }
+            });
     })
+
 });
 
+describe('get amisjson completion at point', function () {
+    async function testGetDocumentCompletionAtPoint(code: string, position: Position) {
+        const sourceFile = TextDocument.create('test://test/test.ts', 'typescript', 0, code);
+        const sls = getShadowLS();
+        sls.initialize(null);
+
+        const completion = await sls.doComplete(sourceFile, position);
+        sls.dispose();
+    }
+    it('get amisjson at object literal', async function () {
+        await testGetDocumentCompletionAtPoint(`
+function test() {
+    /** amis */
+    var obj6 = {
+        type: "page",
+        body: "declaration"
+    };
+
+    /** amis */
+    obj6 = {
+        type: "page",
+        body: "new value"
+    };
+}`, { line: 4, character: 11 });
+    })
+});

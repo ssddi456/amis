@@ -114,7 +114,7 @@ export function createDocumentRegions(
     function getRegionAtPosition(document: TextDocument, regions: EmbeddedRegion[], position: Position): EmbeddedRegion {
         const offset = document.offsetAt(position);
 
-        logger.log(() => ['getLanguageAtPosition', position, offset]);
+        logger.log(() => ['getRegionAtPosition', position, offset]);
 
         let lastRagionEnd = 0;
         for (const region of regions) {

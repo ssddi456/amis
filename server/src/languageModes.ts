@@ -22,7 +22,7 @@ export interface DocumentContext {
 import { getLanguageModelCache, LanguageModelCache } from './languageModelCache';
 import { logger } from './utils/logger';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { Color, ColorInformation, ColorPresentation } from 'vscode-languageserver';
+import { Color, ColorInformation, ColorPresentation, HandlerResult } from 'vscode-languageserver';
 import { DocumentRegions } from './embeddedSupport';
 import { getDocumentRegions } from './modes/helpers/parser';
 import { getAmisJsonMode } from './modes/amisJson';
@@ -31,18 +31,18 @@ export interface LanguageMode {
     getId(): string;
     configure?(options: any): void;
     doValidation?(document: TextDocument): Diagnostic[];
-    doComplete?(document: TextDocument, position: Position): Thenable<CompletionList | null>;
-    doResolve?(document: TextDocument, item: CompletionItem): Thenable<CompletionItem | null>;
-    doHover?(document: TextDocument, position: Position): Thenable<Hover | null>;
-    doSignatureHelp?(document: TextDocument, position: Position): Thenable<SignatureHelp | null>;
-    findDocumentHighlight?(document: TextDocument, position: Position): Thenable<DocumentHighlight[] | null>;
-    findDocumentSymbols?(document: TextDocument): Thenable<SymbolInformation[] | null>;
-    findDocumentLinks?(document: TextDocument, documentContext: DocumentContext): Thenable<DocumentLink[] | null>;
-    findDefinition?(document: TextDocument, position: Position): Thenable<Definition | null>;
-    findReferences?(document: TextDocument, position: Position): Thenable<Location[] | null>;
-    format?(document: TextDocument, range: Range, options: FormattingOptions): Thenable<TextEdit[] | null>;
-    findDocumentColors?(document: TextDocument): Thenable<ColorInformation[] | null>;
-    getColorPresentations?(document: TextDocument, color: Color, range: Range): Thenable<ColorPresentation[] | null>;
+    doComplete?(document: TextDocument, position: Position): HandlerResult<CompletionList | null, any>;
+    doResolve?(document: TextDocument, item: CompletionItem): HandlerResult<CompletionItem | null, any>;
+    doHover?(document: TextDocument, position: Position): HandlerResult<Hover | null, any>;
+    doSignatureHelp?(document: TextDocument, position: Position): HandlerResult<SignatureHelp | null, any>;
+    findDocumentHighlight?(document: TextDocument, position: Position): HandlerResult<DocumentHighlight[] | null, any>;
+    findDocumentSymbols?(document: TextDocument): HandlerResult<SymbolInformation[] | null, any>;
+    findDocumentLinks?(document: TextDocument, documentContext: DocumentContext): HandlerResult<DocumentLink[] | null, any>;
+    findDefinition?(document: TextDocument, position: Position): HandlerResult<Definition | null, any>;
+    findReferences?(document: TextDocument, position: Position): HandlerResult<Location[] | null, any>;
+    format?(document: TextDocument, range: Range, options: FormattingOptions): HandlerResult<TextEdit[] | null, any>;
+    findDocumentColors?(document: TextDocument): HandlerResult<ColorInformation[] | null, any>;
+    getColorPresentations?(document: TextDocument, color: Color, range: Range): HandlerResult<ColorPresentation[] | null, any>;
 
     onDocumentRemoved(document: TextDocument): void;
     dispose(): void;
@@ -70,6 +70,7 @@ export function getLanguageModes(workspacePath: string | null | undefined): Lang
     modelCaches.push(documentRegions);
 
     let modes: { [k: string]: LanguageMode } = {
+        amisjson: jsonMode,
         javascript: jsonMode,
         jsx: jsonMode,
         tsx: jsonMode,

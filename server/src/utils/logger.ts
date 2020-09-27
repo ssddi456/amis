@@ -12,6 +12,7 @@ function getLogger() {
     const tempLogFile = 'D:/temp/test.log';
     const ret = {
         info(...args: any[]) {
+            console.log(...args);
             if (DEBUG) {
                 const now = new Date();
                 const timeStr = `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;

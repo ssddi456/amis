@@ -10,7 +10,7 @@ import {
     Definition,
     Location,
     Hover,
-    Range
+    Range, DocumentSymbol
 } from 'vscode-languageserver-types';
 
 import {
@@ -123,7 +123,7 @@ export function getShadowLS() {
             for (let index = 0; index < modes.length; index++) {
                 const m = modes[index];
                 if (m.findDocumentLinks) {
-                    pushAll(links, await m.findDocumentLinks(doc, documentContext) || []);
+                    pushAll(links, (await m.findDocumentLinks(doc, documentContext) as DocumentLink[])  || []);
                 }
             }
             return links;
@@ -134,7 +134,7 @@ export function getShadowLS() {
             for (let index = 0; index < modes.length; index++) {
                 const m = modes[index];
                 if (m.findDocumentSymbols) {
-                    pushAll(symbols, await m.findDocumentSymbols(doc) || []);
+                    pushAll(symbols, (await m.findDocumentSymbols(doc) as SymbolInformation[]) || []);
                 }
             }
             return symbols;
@@ -145,7 +145,7 @@ export function getShadowLS() {
             for (let index = 0; index < modes.length; index++) {
                 const m = modes[index];
                 if (m.findDocumentColors) {
-                    pushAll(colors, await m.findDocumentColors(doc) || []);
+                    pushAll(colors, (await m.findDocumentColors(doc) as ColorInformation[]) || []);
                 }
             }
             return colors;
