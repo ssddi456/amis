@@ -5,7 +5,15 @@
 
 ## amis vscode plugin
 
-此项目的主要目标是用于提升使用[amis](https://github.com/baidu/amis)进行开发及二次开发的各种项目，在vscode中的开发体验及开发速度
+此项目的主要目标是用于帮助使用[amis](https://github.com/baidu/amis)进行开发及二次开发的各种项目，提升在vscode中开发的体验及效率。
+
+自动补全
+
+![autocompletion](./pictures/20201009171003.png)
+
+信息提示
+
+![hover](./pictures/20201009171057.png)
 
 ## 安装
 
