@@ -13,7 +13,7 @@
 
 信息提示
 
-![hover](./pictures/20201009171057.png)
+![hover](./pictures/20201009171058.png)
 
 ## 安装
 
