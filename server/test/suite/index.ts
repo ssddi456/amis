@@ -47,3 +47,15 @@ export function run(): Promise<void> {
         })
     })
 }
+
+/** amis */
+const aPage = {
+    type: 'page',
+    body: {
+        "type": "form",
+        "controls": [{
+            type: "url",
+            "label": "some title"
+        }]
+    }
+}
