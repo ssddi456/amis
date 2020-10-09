@@ -8,15 +8,22 @@ import {
 	LanguageService,
 	ClientCapabilities
 } from 'vscode-json-languageservice';
+
+import {
+	CompletionList,
+	CompletionItem
+} from 'vscode-languageserver-types';
 import { insertSchema } from './helpers/preprocesser';
-import { shadowJSONSchemaPrefix } from './helpers/bridge';
+import { defaultSchema, shadowJSONSchemaPrefix, shadowJSONSchemaValue } from './helpers/bridge';
+import { NULL_COMPLETION } from './nullMode';
 
 
 export function getLs(configure: LanguageSettings = {
 	validate: false,
 	allowComments: true,
 	schemas: [{
-		uri: 'https://houtai.baidu.com/v2/schemas/page.json',
+		uri: shadowJSONSchemaValue,
+		schema: defaultSchema
 	}]
 }) {
 	const ls = getLanguageService({
@@ -32,7 +39,7 @@ export function getLs(configure: LanguageSettings = {
 		async schemaRequestService(schemaUri: string): Promise<string> {
 
 			return await new Promise<string>(function (resolve, reject) {
-				
+
 				request.get(schemaUri, function (err, resp, body) {
 					if (err) {
 						console.log('do get schema failed', schemaUri, err);
@@ -67,19 +74,25 @@ export function getAmisJsonMode(
 		},
 
 		doHover(document, position) {
+			const region = documentRegions.get(document).getRegionAtPosition(position);
 			const textdocument = documentRegions.get(document).getSubDocumentAtPosition(position);
 			const jsonDocument = ls.parseJSONDocument(textdocument);
-			insertSchema(jsonDocument);
+			insertSchema(jsonDocument, region.schema!);
 
 			return ls.doHover(textdocument, position, jsonDocument)
 		},
 
-		doComplete(document, position) {
+		async doComplete(document, position): Promise<CompletionList> {
+			const region = documentRegions.get(document).getRegionAtPosition(position);
 			const textdocument = documentRegions.get(document).getSubDocumentAtPosition(position);
 			const jsonDocument = ls.parseJSONDocument(textdocument);
-			insertSchema(jsonDocument);
+			insertSchema(jsonDocument, region.schema!);
 
-			return ls.doComplete(textdocument, position, jsonDocument)
+			return (await ls.doComplete(textdocument, position, jsonDocument) as CompletionList | null) || NULL_COMPLETION;
+		},
+
+		async doResolve(document, item): Promise<CompletionItem> {
+			return await ls.doResolve(item) as any;
 		},
 
 		onDocumentRemoved(document) {

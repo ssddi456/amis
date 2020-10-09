@@ -24,13 +24,14 @@ export function parseAmisJSON(content: string) {
 		return makeLeadingBlankSpace(node) + content.slice(node.pos, node.end);
 	}
 
-	function addCodeToRegion(node: ts.ReadonlyTextRange) {
+	function addCodeToRegion(node: ts.ReadonlyTextRange, schema: string) {
 		regions.push({
 			start: node.pos,
 			end: node.end,
 			languageId: 'amisjson',
 			type: 'json',
-			text: getSourceInRange(node)
+			text: getSourceInRange(node),
+			schema,
 		});
 	}
 	/**
@@ -40,18 +41,29 @@ export function parseAmisJSON(content: string) {
 		return function (rootNode: T) {
 			function visit(node: ts.Node): ts.VisitResult<ts.Node> {
 				if ((node as any).jsDoc) {
+					let schema = '';
 					if (
-						(node as any).jsDoc.some((item: any) => item.comment && item.comment.trim() == 'amis')
+						(node as any).jsDoc.some((item: any) => {
+							if (item.comment) {
+								const comment = item.comment.trim();
+								if (['amis', 'amis-formitem'].indexOf(comment) !== -1) {
+									schema = comment;
+									return true;
+								}
+							}
+						})
 					) {
 						if (ts.isObjectLiteralElementLike(node)) {
 							if (ts.isPropertyAssignment(node)) {
 								if (ts.isObjectLiteralExpression(node.initializer)) {
-									addCodeToRegion((node as ts.PropertyAssignment).initializer);
+									addCodeToRegion((node as ts.PropertyAssignment).initializer, schema);
+									return;
 								}
 							}
 						} else if (ts.isExportAssignment(node)) {
 							if (ts.isObjectLiteralExpression(node.expression)) {
-								addCodeToRegion(node.expression);
+								addCodeToRegion(node.expression, schema);
+								return;
 							}
 
 						} else if (node.kind == ts.SyntaxKind.FirstStatement) {
@@ -60,7 +72,8 @@ export function parseAmisJSON(content: string) {
 							if (declarationList && ts.isVariableDeclarationList(declarationList)) {
 								const declaration = declarationList.declarations[0];
 								if (declaration && declaration.initializer && ts.isObjectLiteralExpression(declaration.initializer)) {
-									addCodeToRegion(declaration.initializer);
+									addCodeToRegion(declaration.initializer, schema);
+									return;
 								}
 							}
 
@@ -68,7 +81,8 @@ export function parseAmisJSON(content: string) {
 							const expression = node.expression;
 							if (ts.isBinaryExpression(expression)) {
 								if (ts.isObjectLiteralExpression(expression.right)) {
-									addCodeToRegion(expression.right);
+									addCodeToRegion(expression.right, schema);
+									return;
 								}
 							}
 						} else {

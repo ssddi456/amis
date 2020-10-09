@@ -8,7 +8,6 @@ import { CompletionItemKind, CompletionList, Hover, MarkupContent, Position, Tex
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
 import * as ts from 'typescript';
-import { logCodeAst } from '../src/utils/logger';
 import { getDocumentRegions, parseAmisJSON } from '../src/modes/helpers/parser';
 import { EmbeddedRegion } from '../src/embeddedSupport';
 import { getShadowLS } from '../src/languageService';
@@ -326,6 +325,7 @@ export default {
     "body": [
         {
             "type": "grid",
+            "visible": true,
             "columns": []
         }
     ]
@@ -335,8 +335,31 @@ export default {
                 character: 15
             },
             {
-                contents: ['列集合'],
+                contents: ['是否显示'],
                 range: { start: { line: 8, character: 12 }, end: { line: 8, character: 21 } }
+            });
+    });
+
+    it('get hover info for nest schema', async function () {
+        await testGetDocumentHoverAtPoint(`/** amis */
+export default {
+    type: "page",
+    "body": [
+        {
+            "type": "form",
+            "controls": [{
+                type: "text"
+            }]
+        }
+    ]
+}`,
+            {
+                line: 8,
+                character: 18
+            },
+            {
+                contents: ['表单项类型'],
+                range: { start: { line: 8, character: 16 }, end: { line: 8, character: 21 } }
             });
     })
 
@@ -349,11 +372,12 @@ describe('get amisjson completion at point', function () {
         sls.initialize(null);
 
         const completion = await sls.doComplete(sourceFile, position);
+        // console.log('completion', completion);
+        
         sls.dispose();
     }
     it('get amisjson at object literal', async function () {
-        await testGetDocumentCompletionAtPoint(`
-function test() {
+        await testGetDocumentCompletionAtPoint(`function test() {
     /** amis */
     var obj6 = {
         type: "page",

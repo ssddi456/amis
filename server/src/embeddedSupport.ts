@@ -29,6 +29,7 @@ export interface EmbeddedRegion<T = any> {
     end: number;
     type: T;
     text?: string;
+    schema?: string;
 }
 
 const defaultType: { [type: string]: string } = {

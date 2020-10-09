@@ -3,42 +3,56 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"type": "extensionHost",
-			"request": "launch",
-			"name": "Launch Client",
-			"runtimeExecutable": "${execPath}",
-			"args": ["--extensionDevelopmentPath=${workspaceRoot}"],
-			"outFiles": ["${workspaceRoot}/client/out/**/*.js"],
-			"preLaunchTask": {
-				"type": "npm",
-				"script": "watch"
-			}
-		},
-		{
-			"type": "node",
-			"request": "attach",
-			"name": "Attach to Server",
-			"port": 6009,
-			"restart": true,
-			"outFiles": ["${workspaceRoot}/server/out/**/*.js"]
-		},
-		{
 			"name": "Language Server E2E Test",
 			"type": "extensionHost",
 			"request": "launch",
 			"runtimeExecutable": "${execPath}",
 			"args": [
+				"--disable-extensions",
 				"--extensionDevelopmentPath=${workspaceRoot}",
-				"--extensionTestsPath=${workspaceRoot}/client/out/test/index",
-				"${workspaceRoot}/client/testFixture"
+				"--extensionTestsPath=${workspaceRoot}/server/out/test/suite/index",
+				"${workspaceRoot}/server/test/suite"
 			],
-			"outFiles": ["${workspaceRoot}/client/out/test/**/*.js"]
-		}
-	],
-	"compounds": [
+			"outFiles": [
+				"${workspaceRoot}/client/out/test/**/*.js"
+			],
+			"preLaunchTask": "npm: compile"
+		},
 		{
-			"name": "Client + Server",
-			"configurations": ["Launch Client", "Attach to Server"]
-		}
+			"name": "Language extensionHost",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--disable-extensions",
+				"--extensionDevelopmentPath=${workspaceRoot}",
+				"--extensionTestsPath=${workspaceRoot}/server/out/test/suite/index",
+				"${workspaceRoot}/server/test/suite"
+			],
+			"outFiles": [
+				"${workspaceRoot}/client/out/test/**/*.js"
+			],
+			"preLaunchTask": "npm: compile"
+		},
+		{
+            "name": "test server",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceRoot}/server/node_modules/mocha/bin/_mocha",
+            "stopOnEntry": true,
+            "args": [
+				"-r", "ts-node/register",
+				"--reporter", "spec",
+				"--recursive",
+				"--extension ts",
+                "--no-timeouts",
+                "test\\test-parser.ts"
+            ],
+            "cwd": "${workspaceRoot}/server",
+            "runtimeExecutable": null,
+            "env": {
+                "NODE_ENV": "testing"
+            }
+        }
 	]
 }

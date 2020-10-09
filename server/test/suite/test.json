@@ -1,0 +1,16 @@
+{
+    "$schema": "../../src/schemas/schema.json",
+    "type": "page",
+    "body": [{
+        "type": "form",
+        "controls": [{
+            "type": "email",
+            "label": "123123",
+            "validations": {
+                "isAlpha": true
+            }
+
+        }]
+    }]
+
+}

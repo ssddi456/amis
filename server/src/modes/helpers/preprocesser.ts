@@ -2,7 +2,7 @@
  * 修改源码插入 $schema
  */
 import { JSONDocument, PropertyASTNode, ObjectASTNode, StringASTNode } from 'vscode-json-languageservice';
-import { shadowJSONSchemaKey, shadowJSONSchemaValue } from './bridge';
+import { shadowJSONSchemaKey, shadowJSONSchemaValue, shadowJSONFormSchemaValue, getSchemaValueByType } from './bridge';
 
 
 export function hasSchemaNode(document: JSONDocument) {
@@ -18,15 +18,15 @@ export function hasSchemaNode(document: JSONDocument) {
 	return false;
 }
 
-export function insertSchema(document: JSONDocument) {
+export function insertSchema(document: JSONDocument, schemaType: string) {
 	if (!hasSchemaNode(document) && document.root && document.root.type == 'object') {
-		const schemaNode = getSchemaNode(document.root.offset, 0, document.root);
+		const schemaNode = getSchemaNode(document.root.offset, 0, document.root, schemaType);
 		document.root.properties.unshift(schemaNode);
 	}
 }
 
 
-export function getSchemaNode(offset: number, colonOffset: number, parent: ObjectASTNode): PropertyASTNode {
+export function getSchemaNode(offset: number, colonOffset: number, parent: ObjectASTNode, schemaType: string): PropertyASTNode {
 	const key: StringASTNode = {
 		type: 'string',
 		offset,
@@ -37,7 +37,7 @@ export function getSchemaNode(offset: number, colonOffset: number, parent: Objec
 		type: 'string',
 		offset,
 		length: 0,
-		value: shadowJSONSchemaValue,
+		value: getSchemaValueByType(schemaType),
 	};
 	const property: PropertyASTNode = {
 		type: 'property',
@@ -49,5 +49,7 @@ export function getSchemaNode(offset: number, colonOffset: number, parent: Objec
 		colonOffset,
 		children: [],
 	};
+	(key as any).parent = property;
+	(value as any).parent = property;
 	return property;
 }

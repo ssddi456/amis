@@ -31,7 +31,7 @@ export interface LanguageMode {
     getId(): string;
     configure?(options: any): void;
     doValidation?(document: TextDocument): Diagnostic[];
-    doComplete?(document: TextDocument, position: Position): HandlerResult<CompletionList | null, any>;
+    doComplete?(document: TextDocument, position: Position): Promise<CompletionList> | CompletionList;
     doResolve?(document: TextDocument, item: CompletionItem): HandlerResult<CompletionItem | null, any>;
     doHover?(document: TextDocument, position: Position): HandlerResult<Hover | null, any>;
     doSignatureHelp?(document: TextDocument, position: Position): HandlerResult<SignatureHelp | null, any>;
