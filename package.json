@@ -3,7 +3,7 @@
 	"description": "amis json intelligense",
 	"author": "ssddi456",
 	"license": "MIT",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/ssddi456/amis"
@@ -27,24 +27,34 @@
 	"contributes": {
 		"configuration": {
 			"type": "object",
-			"title": "Example configuration",
+			"title": "Amis Configures",
 			"properties": {
-				"amisLanguageServer.maxNumberOfProblems": {
+				"amisLanguageServer.schema.map": {
 					"scope": "resource",
-					"type": "number",
-					"default": 100,
-					"description": "Controls the maximum number of problems produced by the server."
-				},
-				"amisLanguageServer.trace.server": {
-					"scope": "window",
-					"type": "string",
-					"enum": [
-						"off",
-						"messages",
-						"verbose"
-					],
-					"default": "off",
-					"description": "Traces the communication between VS Code and the language server."
+					"type": "array",
+					"default": [{
+						"label": "amis",
+						"schema": "https://fex-team.github.io/amis-editor-demo/schema.json",
+						"isAmisStyleSchema": true
+					}],
+					"items": {
+						"type": "object",
+						"properties": {
+							"label": {
+								"type": "string",
+								"description": "the label comment of scheme hint"
+							},
+							"schema": {
+								"type": "string",
+								"description": "the schema definition of the schema"
+							},
+							"isAmisStyleSchema": {
+								"type": "boolean",
+								"description": "should apply amis schema special rule"
+							}
+						}
+					},
+					"description": "Controls label and resource map of schemas"
 				}
 			}
 		}

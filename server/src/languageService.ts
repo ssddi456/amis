@@ -42,11 +42,7 @@ export function getShadowLS() {
         initialize(workspacePath: string | null | undefined) {
             languageModes = getLanguageModes(workspacePath);
         },
-        configure(config: { drei: { validation: ValidationOptions } }) {
-            const dreiValidationOptions = config.drei.validation;
-
-            validation.javascript = dreiValidationOptions.script;
-
+        configure(config: any) {
             languageModes.getAllModes().forEach(m => {
                 if (m.configure) {
                     m.configure(config);

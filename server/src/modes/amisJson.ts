@@ -71,6 +71,9 @@ export function getAmisJsonMode(
 		},
 		configure(c: LanguageSettings) {
 			ls.configure(c);
+			if (documentRegions.configure) {
+				documentRegions.configure(c);
+			}
 		},
 
 		doHover(document, position) {

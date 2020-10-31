@@ -3,15 +3,20 @@ import { logger } from './utils/logger';
 
 export interface LanguageModelCache<T> {
 	get(document: TextDocument): T;
+	configure?(config: any): void;
 	onDocumentRemoved(document: TextDocument): void;
 	dispose(): void;
 	update(document: TextDocument): void
 }
 
+interface DocumentParser<T> {
+	(document: TextDocument): T;
+	configure?(config: any): void;
+}
 export function getLanguageModelCache<T>(
 	maxEntries: number,
 	cleanupIntervalTimeInSec: number,
-	parse: (document: TextDocument) => T
+	parse: DocumentParser<T>
 ): LanguageModelCache<T> {
 	let languageModels: { [uri: string]: { version: number; languageId: string; cTime: number; languageModel: T } } = {};
 	let nModels = 0;
@@ -32,6 +37,11 @@ export function getLanguageModelCache<T>(
 	}
 
 	return {
+		configure(config) {
+			if (parse.configure) {
+				parse.configure(config);
+			}
+		},
 		update(document: TextDocument): void {
 			if (languageModels[document.uri]) {
 				this.get(document);
@@ -49,7 +59,7 @@ export function getLanguageModelCache<T>(
 			}
 
 			const languageModel = parse(document);
-			
+
 			languageModels[document.uri] = { languageModel, version, languageId, cTime: Date.now() };
 			if (!languageModelInfo) {
 				nModels++;

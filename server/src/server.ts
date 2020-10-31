@@ -87,13 +87,23 @@ connection.onInitialized(() => {
 
 // The example settings
 interface ExampleSettings {
-	maxNumberOfProblems: number;
+	schema: {
+		map: { label: string, schema: string, isAmisStyleSchema: boolean }[]
+	};
 }
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
-const defaultSettings: ExampleSettings = { maxNumberOfProblems: 1000 };
+const defaultSettings: ExampleSettings = {
+	schema: {
+		map: [{
+			"label": "amis",
+			"schema": "https://fex-team.github.io/amis-editor-demo/schema.json",
+			isAmisStyleSchema: true
+		}]
+	}
+};
 let globalSettings: ExampleSettings = defaultSettings;
 
 // Cache the settings of all open documents
@@ -105,10 +115,12 @@ connection.onDidChangeConfiguration(change => {
 		documentSettings.clear();
 	} else {
 		globalSettings = <ExampleSettings>(
-			(change.settings.languageServerExample || defaultSettings)
+			(change.settings.amisLanguageServer || defaultSettings)
 		);
 	}
 
+	console.log(globalSettings);
+	sls.configure(globalSettings);
 	// Revalidate all open text documents
 	documents.all().forEach(validateTextDocument);
 });

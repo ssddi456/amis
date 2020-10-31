@@ -64,7 +64,7 @@ export interface LanguageModeRange extends Range {
 }
 
 export function getLanguageModes(workspacePath: string | null | undefined): LanguageModes {
-    const documentRegions = getLanguageModelCache<DocumentRegions>(10, 60, document => getDocumentRegions(document));
+    const documentRegions = getLanguageModelCache<DocumentRegions>(10, 60, getDocumentRegions);
     const jsonMode = getAmisJsonMode(documentRegions, workspacePath);
     let modelCaches: LanguageModelCache<any>[] = [];
     modelCaches.push(documentRegions);
