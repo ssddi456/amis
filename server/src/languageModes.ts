@@ -22,14 +22,15 @@ export interface DocumentContext {
 import { getLanguageModelCache, LanguageModelCache } from './languageModelCache';
 import { logger } from './utils/logger';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { Color, ColorInformation, ColorPresentation, HandlerResult } from 'vscode-languageserver';
+import { CodeAction, Color, ColorInformation, ColorPresentation, Command, HandlerResult, Connection } from 'vscode-languageserver';
 import { DocumentRegions } from './embeddedSupport';
 import { getDocumentRegions } from './modes/helpers/parser';
 import { getAmisJsonMode } from './modes/amisJson';
+import { AmisConfigSettings } from './AmisConfigSettings';
 
 export interface LanguageMode {
     getId(): string;
-    configure?(options: any): void;
+    configure?(options: AmisConfigSettings): void;
     doValidation?(document: TextDocument): Diagnostic[];
     doComplete?(document: TextDocument, position: Position): Promise<CompletionList> | CompletionList;
     doResolve?(document: TextDocument, item: CompletionItem): HandlerResult<CompletionItem | null, any>;
@@ -43,7 +44,9 @@ export interface LanguageMode {
     format?(document: TextDocument, range: Range, options: FormattingOptions): HandlerResult<TextEdit[] | null, any>;
     findDocumentColors?(document: TextDocument): HandlerResult<ColorInformation[] | null, any>;
     getColorPresentations?(document: TextDocument, color: Color, range: Range): HandlerResult<ColorPresentation[] | null, any>;
-
+    getCommands?(): string[];
+    executeCommand?(command: string, args: any[], connect: Connection): any;
+    doCodeAction?(document: TextDocument, range: Range): HandlerResult<Array<Command | CodeAction>, any>;
     onDocumentRemoved(document: TextDocument): void;
     dispose(): void;
 }

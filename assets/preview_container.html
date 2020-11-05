@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        html,
+        body,
+        iframe {
+            height: 100%;
+            width: 100%;
+            padding: 0;
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        console.time('time')
+
+        let previewIframe;
+        window.addEventListener('message', function (ev) {
+            console.timeEnd('time')
+            console.log(ev);
+            if (previewIframe && ev.data.schema){
+                send(previewIframe, ev.data.schema);
+            }
+        });
+
+        function send(iframe, schema) {
+            iframe.contentWindow.postMessage({
+                isJS: false,
+                schema,
+                type: 'schema'
+            }, "*");
+        }
+
+        window.test_scheme_preview = function (iframe) {
+            // setTimeout(() => send(), 1000);
+            previewIframe = iframe;
+            send(iframe, {
+                "type": "page",
+                "body": [{}]
+            });
+        }
+    </script>
+    <iframe src="/community/preview?pid=kemis_pc&version=1.0.20" onload="test_scheme_preview(this)"
+        frameborder="0"></iframe>
+</body>
+
+</html>

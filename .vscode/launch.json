@@ -14,7 +14,7 @@
 				"${workspaceRoot}/server/test/suite"
 			],
 			"outFiles": [
-				"${workspaceRoot}/client/out/test/**/*.js"
+				"${workspaceRoot}/server/out/test/**/*.js"
 			],
 			"preLaunchTask": "npm: compile"
 		},
@@ -30,7 +30,7 @@
 				"${workspaceRoot}/server/test/suite"
 			],
 			"outFiles": [
-				"${workspaceRoot}/client/out/test/**/*.js"
+				"${workspaceRoot}/server/out/test/**/*.js"
 			],
 			"preLaunchTask": "npm: compile"
 		},

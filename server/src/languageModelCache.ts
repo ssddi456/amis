@@ -1,7 +1,9 @@
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { logger } from './utils/logger';
+import { AmisConfigSettings } from "./AmisConfigSettings";
+
 
 export interface LanguageModelCache<T> {
+	getByUri(uri: String): T;
 	get(document: TextDocument): T;
 	configure?(config: any): void;
 	onDocumentRemoved(document: TextDocument): void;
@@ -11,7 +13,7 @@ export interface LanguageModelCache<T> {
 
 interface DocumentParser<T> {
 	(document: TextDocument): T;
-	configure?(config: any): void;
+	configure?(config: AmisConfigSettings): void;
 }
 export function getLanguageModelCache<T>(
 	maxEntries: number,
@@ -37,7 +39,8 @@ export function getLanguageModelCache<T>(
 	}
 
 	return {
-		configure(config) {
+		configure(config : AmisConfigSettings) {
+			languageModels = {};
 			if (parse.configure) {
 				parse.configure(config);
 			}
@@ -46,6 +49,9 @@ export function getLanguageModelCache<T>(
 			if (languageModels[document.uri]) {
 				this.get(document);
 			}
+		},
+		getByUri( uri: string): T {
+			return languageModels[uri]?.languageModel;
 		},
 		get(document: TextDocument): T {
 			const version = document.version;

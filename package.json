@@ -11,7 +11,7 @@
 	"publisher": "ssddi456",
 	"categories": [],
 	"keywords": [
-		"multi-root ready"
+		"amis amislike"
 	],
 	"engines": {
 		"vscode": "^1.43.0"
@@ -23,7 +23,7 @@
 		"onLanguage:typescriptreact",
 		"onLanguage:json"
 	],
-	"main": "./client/out/extension",
+	"main": "./client/out/extension.js",
 	"contributes": {
 		"configuration": {
 			"type": "object",
@@ -32,11 +32,13 @@
 				"amisLanguageServer.schema.map": {
 					"scope": "resource",
 					"type": "array",
-					"default": [{
-						"label": "amis",
-						"schema": "https://fex-team.github.io/amis-editor-demo/schema.json",
-						"isAmisStyleSchema": true
-					}],
+					"default": [
+						{
+							"label": "amis",
+							"schema": "https://fex-team.github.io/amis-editor-demo/schema.json",
+							"isAmisStyleSchema": true
+						}
+					],
 					"items": {
 						"type": "object",
 						"properties": {
@@ -61,17 +63,17 @@
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
+		"webpack": "webpack --mode development",
+		"webpack-dev": "webpack --mode development --watch",
 		"compile": "tsc -b",
 		"watch": "tsc -b -w",
-		"postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
-		"test": "sh ./scripts/e2e.sh"
+		"postinstall": "cd client && npm install && cd ../server && npm install && cd .."
 	},
 	"devDependencies": {
 		"@types/mocha": "^8.0.3",
-		"mocha": "^8.1.1",
 		"@types/node": "^12.12.0",
-		"eslint": "^6.4.0",
 		"@typescript-eslint/parser": "^2.3.0",
-		"typescript": "^4.0.2"
+		"eslint": "^6.4.0",
+		"mocha": "^8.1.1"
 	}
 }

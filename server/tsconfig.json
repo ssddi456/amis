@@ -8,10 +8,11 @@
 		"moduleResolution": "node",
 		"sourceMap": true,
 		"strict": true,
-		"outDir": "out"
+		"outDir": "out",
+		"composite": false
 	},
 	"include": [
-		"src",
+		"./src",
 		"test"
 	],
 	"exclude": [

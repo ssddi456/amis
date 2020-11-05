@@ -22,7 +22,7 @@ import { NULL_HOVER, NULL_COMPLETION, NULL_SIGNATURE } from './modes/nullMode';
 
 import { logger } from './utils/logger';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { HandlerResult } from 'vscode-languageserver';
+import { CodeAction, Command, Connection, HandlerResult } from 'vscode-languageserver';
 
 export interface DocumentContext {
     resolveReference(ref: string, base?: string): string;
@@ -41,6 +41,11 @@ export function getShadowLS() {
     return {
         initialize(workspacePath: string | null | undefined) {
             languageModes = getLanguageModes(workspacePath);
+        },
+        getAllCommands(): string[] {
+            return ([] as string[]).concat(
+                ...(languageModes?.getAllModes().map(mode => mode.getCommands ? mode.getCommands() : []) || [])
+            );
         },
         configure(config: any) {
             languageModes.getAllModes().forEach(m => {
@@ -90,6 +95,26 @@ export function getShadowLS() {
             }
             return NULL_HOVER;
         },
+        doCodeAction(doc: TextDocument, range: Range): HandlerResult<Array<Command | CodeAction>, any> {
+            const mode = languageModes.getModeAtPosition(doc, range.start);
+            console.log('may do code action?', !!mode, !!(mode?.doCodeAction));
+            
+            if (mode && mode.doCodeAction) {
+                try {
+                    return mode.doCodeAction(doc, range);
+                } catch (error) {
+                    logger.log(() => [error]);
+                }
+            }
+            return []
+        },
+        doExecuteCommand(command: string, args: any[], connect: Connection) {
+            languageModes.getAllModes().forEach(m => {
+                if (m.getCommands && m.getCommands().indexOf(command) != -1) {
+                    m.executeCommand!(command, args, connect);
+                }
+            });
+        },
         findDocumentHighlight(doc: TextDocument, position: Position): HandlerResult<DocumentHighlight[] | null, any> {
             const mode = languageModes.getModeAtPosition(doc, position);
             if (mode && mode.findDocumentHighlight) {
@@ -119,7 +144,7 @@ export function getShadowLS() {
             for (let index = 0; index < modes.length; index++) {
                 const m = modes[index];
                 if (m.findDocumentLinks) {
-                    pushAll(links, (await m.findDocumentLinks(doc, documentContext) as DocumentLink[])  || []);
+                    pushAll(links, (await m.findDocumentLinks(doc, documentContext) as DocumentLink[]) || []);
                 }
             }
             return links;

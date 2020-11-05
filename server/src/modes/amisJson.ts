@@ -6,26 +6,54 @@ import {
 	LanguageSettings,
 	getLanguageService,
 	LanguageService,
-	ClientCapabilities
+	ClientCapabilities,
+	TextDocument
 } from 'vscode-json-languageservice';
 
+import * as fs from 'fs';
 import {
 	CompletionList,
-	CompletionItem
+	CompletionItem,
 } from 'vscode-languageserver-types';
 import { insertSchema } from './helpers/preprocesser';
 import { defaultSchema, shadowJSONSchemaPrefix, shadowJSONSchemaValue } from './helpers/bridge';
 import { NULL_COMPLETION } from './nullMode';
+import { AmisConfigSettings, defaultSettings } from '../AmisConfigSettings';
+import { Command, TextDocumentChangeEvent } from 'vscode-languageserver';
+import events, { EventTypes } from '../utils/events';
 
+enum AmisCommand {
+	preview = 'amis.previewSchema',
+	endpreview = 'amis.endPreviewSchema',
+};
+enum AmisNotification {
+	openPreviewWebview = 'amisJsonExtension/openPreviewWebview',
+	updatePreviewWebview = 'amisJsonExtension/updatePreviewWebview',
+};
 
-export function getLs(configure: LanguageSettings = {
-	validate: false,
-	allowComments: true,
-	schemas: [{
-		uri: shadowJSONSchemaValue,
-		schema: defaultSchema
-	}]
-}) {
+const AmisCommandKeys = Object.keys(AmisCommand)
+const commands: AmisCommand[] = AmisCommandKeys.map(k => (AmisCommand as any)[k]).map(v => v as AmisCommand)
+
+export function getLs({
+	extensionSetting,
+	languageSettings
+}: {
+	extensionSetting: AmisConfigSettings,
+	languageSettings: LanguageSettings
+} = {
+		extensionSetting: defaultSettings,
+		languageSettings: {
+			validate: false,
+			allowComments: true,
+			schemas: [{
+				uri: shadowJSONSchemaValue,
+				schema: defaultSchema
+			}]
+		}
+	}
+) {
+	// 这里可以预先加载schemas
+
 	const ls = getLanguageService({
 		workspaceContext: {
 			resolveRelativePath(relativePath: string, resource: string): string {
@@ -37,6 +65,7 @@ export function getLs(configure: LanguageSettings = {
 			}
 		},
 		async schemaRequestService(schemaUri: string): Promise<string> {
+			const schemaConfig = (extensionSetting.schema?.map?.filter(item => item.schema == schemaUri) || [])[0];
 
 			return await new Promise<string>(function (resolve, reject) {
 
@@ -45,6 +74,14 @@ export function getLs(configure: LanguageSettings = {
 						console.log('do get schema failed', schemaUri, err);
 						reject(err);
 					} else {
+						if (schemaConfig && schemaConfig.isAmisStyleSchema) {
+							try {
+								const schema = JSON.parse(body);
+								schema["$ref"] = "#/definitions/SchemaObject";
+								resolve(JSON.stringify(schema));
+								return;
+							} catch (error) { }
+						}
 						resolve(body);
 					}
 				});
@@ -53,7 +90,8 @@ export function getLs(configure: LanguageSettings = {
 		clientCapabilities: ClientCapabilities.LATEST
 	});
 
-	ls.configure(configure);
+	ls.configure(languageSettings);
+
 	return ls;
 }
 
@@ -69,8 +107,16 @@ export function getAmisJsonMode(
 		getId() {
 			return 'amisjson';
 		},
-		configure(c: LanguageSettings) {
-			ls.configure(c);
+		configure(c) {
+
+			ls = getLs({
+				extensionSetting: c,
+				languageSettings: {
+					validate: false,
+					allowComments: true,
+					schemas: c?.schema?.map.map(item => { return { uri: item.schema } }) || []
+				}
+			});
 			if (documentRegions.configure) {
 				documentRegions.configure(c);
 			}
@@ -80,7 +126,7 @@ export function getAmisJsonMode(
 			const region = documentRegions.get(document).getRegionAtPosition(position);
 			const textdocument = documentRegions.get(document).getSubDocumentAtPosition(position);
 			const jsonDocument = ls.parseJSONDocument(textdocument);
-			insertSchema(jsonDocument, region.schema!);
+			insertSchema(jsonDocument, region.schema!, region.schemaUri);
 
 			return ls.doHover(textdocument, position, jsonDocument)
 		},
@@ -89,7 +135,7 @@ export function getAmisJsonMode(
 			const region = documentRegions.get(document).getRegionAtPosition(position);
 			const textdocument = documentRegions.get(document).getSubDocumentAtPosition(position);
 			const jsonDocument = ls.parseJSONDocument(textdocument);
-			insertSchema(jsonDocument, region.schema!);
+			insertSchema(jsonDocument, region.schema!, region.schemaUri);
 
 			return (await ls.doComplete(textdocument, position, jsonDocument) as CompletionList | null) || NULL_COMPLETION;
 		},
@@ -98,6 +144,56 @@ export function getAmisJsonMode(
 			return await ls.doResolve(item) as any;
 		},
 
+		getCommands() {
+			return commands;
+		},
+		async doCodeAction(document, range): Promise<Command[]> {
+			const regions = documentRegions.get(document);
+			const region = regions.getRegionAtPosition(range.start);
+			const index = regions.getRegionIndex(region);
+
+			return [Command.create('preview schema', AmisCommand.preview,
+				document.uri,
+				index
+			)];
+		},
+		async executeCommand(command: string, args: any[], connection) {
+
+
+			switch (command) {
+				case AmisCommand.preview:
+					const regions = documentRegions.getByUri(args[0]);
+					const textdocument = regions.getSubDocumentAtIndex(args[1]);
+					connection.sendNotification(AmisNotification.openPreviewWebview,
+						tryParseJSON(textdocument.getText()));
+					events.on(EventTypes.fileChange, contentChange);
+					break;
+				case AmisCommand.endpreview:
+					// dispose watch
+					events.removeListener(EventTypes.fileChange, contentChange);
+					break;
+				default:
+					break;
+			}
+
+
+			function tryParseJSON(text: string) {
+				try {
+					return JSON.parse(text.trim());
+				} catch (e) {
+					return text;
+				}
+			}
+
+			function contentChange(event: TextDocumentChangeEvent<TextDocument>) {
+				if (event.document.uri == args[0]) {
+					const regions = documentRegions.get(event.document);
+					const textdocument = regions.getSubDocumentAtIndex(args[1]);
+					connection.sendNotification(AmisNotification.updatePreviewWebview,
+						tryParseJSON(textdocument.getText()));
+				}
+			}
+		},
 		onDocumentRemoved(document) {
 			documentRegions.onDocumentRemoved(document);
 		},

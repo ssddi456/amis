@@ -3,6 +3,7 @@ import { logger } from './utils/logger';
 import { Position } from 'vscode-languageserver';
 import { URI } from 'vscode-uri';
 import * as path from 'path';
+import { AmisConfigSettings } from "./AmisConfigSettings";
 
 export interface LanguageRange extends Range {
     languageId: string;
@@ -19,6 +20,9 @@ export interface DocumentRegions<T = EmbeddedType> {
     getSubDocumentAtPosition(position: Position): TextDocument;
     getLanguagesInDocument(): string[];
     getImportedScripts(): string[];
+    getRegionIndex(region: EmbeddedRegion): number;
+    getRegionAtIndex(index: number): EmbeddedRegion;
+    getSubDocumentAtIndex(index: number): TextDocument;
 }
 
 type EmbeddedType = 'template' | 'script' | 'style' | 'custom';
@@ -30,6 +34,7 @@ export interface EmbeddedRegion<T = any> {
     type: T;
     text?: string;
     schema?: string;
+    schemaUri?: string;
 }
 
 const defaultType: { [type: string]: string } = {
@@ -40,13 +45,14 @@ const defaultType: { [type: string]: string } = {
 
 /** a example */
 export function createDocumentRegions(
-    parser: (document: TextDocument) => EmbeddedRegion[],
+    parser: (document: TextDocument, parserOptions: AmisConfigSettings) => EmbeddedRegion[],
     defaultTypeMap: { [type: string]: string } = defaultType,
     defaultLanguageId: string = '',
+    defaultParserOptions: AmisConfigSettings
 ): (document: TextDocument) => DocumentRegions {
 
-    return function getDocumentRegions(document: TextDocument): DocumentRegions {
-        const regions: EmbeddedRegion[] = parser(document);
+     function getDocumentRegions(document: TextDocument): DocumentRegions {
+        const regions: EmbeddedRegion[] = parser(document, defaultParserOptions);
         const importedScripts: string[] = [];
 
         return {
@@ -58,10 +64,32 @@ export function createDocumentRegions(
             getSubDocumentAtPosition: (position: Position) => getSubDocumentAtPosition(document, regions, position),
             getLanguageAtPosition: (position: Position) => getLanguageAtPosition(document, regions, position),
             getLanguagesInDocument: () => getLanguagesInDocument(document, regions),
-            getImportedScripts: () => importedScripts
+            getImportedScripts: () => importedScripts,
+            getRegionIndex(region) {
+                return regions.indexOf(region);
+            },
+            getRegionAtIndex(index) {
+                return regions[index];
+            },
+            getSubDocumentAtIndex(index) {
+                const region = regions[index];
+                if (index === -1) {
+                    return document;
+                }
+                const documentUrl = URI.file(document.uri);
+                const ext = path.extname(documentUrl.fsPath);
+                const newDocumentUrlPath = path.basename( documentUrl.fsPath, ext) + `.${region.languageId}_${index}` + ext;
+                const newDocumentUrl = URI.file(newDocumentUrlPath);
+                const result = getDocumentContentOfRegion(document, region);
+        
+                return TextDocument.create(newDocumentUrl.toString(), region.languageId, document.version, result);
+            }
         };
     }
-
+    getDocumentRegions.configure = function (parserOptions: AmisConfigSettings) {
+        defaultParserOptions = parserOptions;
+    };
+    return getDocumentRegions;
     function getLanguageRanges(document: TextDocument, regions: EmbeddedRegion[], range: Range): LanguageRange[] {
         const result: LanguageRange[] = [];
         let currentPos = range ? range.start : Position.create(0, 0);

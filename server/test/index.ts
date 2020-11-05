@@ -11,6 +11,7 @@ import * as ts from 'typescript';
 import { getDocumentRegions, parseAmisJSON } from '../src/modes/helpers/parser';
 import { EmbeddedRegion } from '../src/embeddedSupport';
 import { getShadowLS } from '../src/languageService';
+import { defaultSettings } from '../src/AmisConfigSettings';
 
 interface ItemDescription {
     label: string;
@@ -119,7 +120,7 @@ describe('parse text regions', function () {
 
     function testParseRegions(code: string, expected: EmbeddedRegion[]) {
         const sourceFile = ts.createSourceFile('test.ts', code, ts.ScriptTarget.ESNext);
-        const regions = parseAmisJSON(sourceFile.text);
+        const regions = parseAmisJSON(sourceFile.text, defaultSettings);
         assert.deepEqual(regions, expected, 'regions should equal');
     }
 
