@@ -3,6 +3,7 @@ import { logger } from './utils/logger';
 import { Position } from 'vscode-languageserver';
 import { URI } from 'vscode-uri';
 import * as path from 'path';
+import { AmisConfigSettings } from "./AmisConfigSettings";
 
 export interface LanguageRange extends Range {
     languageId: string;
@@ -30,6 +31,7 @@ export interface EmbeddedRegion<T = any> {
     type: T;
     text?: string;
     schema?: string;
+    schemaUri?: string;
 }
 
 const defaultType: { [type: string]: string } = {
@@ -40,13 +42,14 @@ const defaultType: { [type: string]: string } = {
 
 /** a example */
 export function createDocumentRegions(
-    parser: (document: TextDocument) => EmbeddedRegion[],
+    parser: (document: TextDocument, parserOptions: AmisConfigSettings) => EmbeddedRegion[],
     defaultTypeMap: { [type: string]: string } = defaultType,
     defaultLanguageId: string = '',
+    defaultParserOptions: AmisConfigSettings
 ): (document: TextDocument) => DocumentRegions {
 
-    return function getDocumentRegions(document: TextDocument): DocumentRegions {
-        const regions: EmbeddedRegion[] = parser(document);
+     function getDocumentRegions(document: TextDocument): DocumentRegions {
+        const regions: EmbeddedRegion[] = parser(document, defaultParserOptions);
         const importedScripts: string[] = [];
 
         return {
@@ -61,7 +64,10 @@ export function createDocumentRegions(
             getImportedScripts: () => importedScripts
         };
     }
-
+    getDocumentRegions.configure = function (parserOptions: AmisConfigSettings) {
+        defaultParserOptions = parserOptions;
+    };
+    return getDocumentRegions;
     function getLanguageRanges(document: TextDocument, regions: EmbeddedRegion[], range: Range): LanguageRange[] {
         const result: LanguageRange[] = [];
         let currentPos = range ? range.start : Position.create(0, 0);

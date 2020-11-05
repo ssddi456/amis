@@ -16,16 +16,29 @@ import {
 import { insertSchema } from './helpers/preprocesser';
 import { defaultSchema, shadowJSONSchemaPrefix, shadowJSONSchemaValue } from './helpers/bridge';
 import { NULL_COMPLETION } from './nullMode';
+import { AmisConfigSettings, defaultSettings } from '../AmisConfigSettings';
 
 
-export function getLs(configure: LanguageSettings = {
-	validate: false,
-	allowComments: true,
-	schemas: [{
-		uri: shadowJSONSchemaValue,
-		schema: defaultSchema
-	}]
-}) {
+export function getLs({
+	extensionSetting,
+	languageSettings
+}: {
+	extensionSetting: AmisConfigSettings,
+	languageSettings: LanguageSettings
+} = {
+		extensionSetting: defaultSettings,
+		languageSettings: {
+			validate: false,
+			allowComments: true,
+			schemas: [{
+				uri: shadowJSONSchemaValue,
+				schema: defaultSchema
+			}]
+		}
+	}
+) {
+	// 这里可以预先加载schemas
+
 	const ls = getLanguageService({
 		workspaceContext: {
 			resolveRelativePath(relativePath: string, resource: string): string {
@@ -37,6 +50,7 @@ export function getLs(configure: LanguageSettings = {
 			}
 		},
 		async schemaRequestService(schemaUri: string): Promise<string> {
+			const schemaConfig = (extensionSetting.schema?.map?.filter(item => item.schema == schemaUri) || [])[0];
 
 			return await new Promise<string>(function (resolve, reject) {
 
@@ -45,6 +59,14 @@ export function getLs(configure: LanguageSettings = {
 						console.log('do get schema failed', schemaUri, err);
 						reject(err);
 					} else {
+						if (schemaConfig && schemaConfig.isAmisStyleSchema) {
+							try {
+								const schema = JSON.parse(body);
+								schema["$ref"] = "#/definitions/SchemaObject";
+								resolve(JSON.stringify(schema));
+								return;
+							} catch (error) { }
+						}
 						resolve(body);
 					}
 				});
@@ -53,7 +75,8 @@ export function getLs(configure: LanguageSettings = {
 		clientCapabilities: ClientCapabilities.LATEST
 	});
 
-	ls.configure(configure);
+	ls.configure(languageSettings);
+
 	return ls;
 }
 
@@ -69,8 +92,16 @@ export function getAmisJsonMode(
 		getId() {
 			return 'amisjson';
 		},
-		configure(c: LanguageSettings) {
-			ls.configure(c);
+		configure(c) {
+
+			ls = getLs({
+				extensionSetting: c,
+				languageSettings: {
+					validate: false,
+					allowComments: true,
+					schemas: c?.schema?.map.map(item => { return { uri: item.schema } }) || []
+				}
+			});
 			if (documentRegions.configure) {
 				documentRegions.configure(c);
 			}
@@ -80,7 +111,7 @@ export function getAmisJsonMode(
 			const region = documentRegions.get(document).getRegionAtPosition(position);
 			const textdocument = documentRegions.get(document).getSubDocumentAtPosition(position);
 			const jsonDocument = ls.parseJSONDocument(textdocument);
-			insertSchema(jsonDocument, region.schema!);
+			insertSchema(jsonDocument, region.schema!, region.schemaUri);
 
 			return ls.doHover(textdocument, position, jsonDocument)
 		},
@@ -89,7 +120,7 @@ export function getAmisJsonMode(
 			const region = documentRegions.get(document).getRegionAtPosition(position);
 			const textdocument = documentRegions.get(document).getSubDocumentAtPosition(position);
 			const jsonDocument = ls.parseJSONDocument(textdocument);
-			insertSchema(jsonDocument, region.schema!);
+			insertSchema(jsonDocument, region.schema!, region.schemaUri);
 
 			return (await ls.doComplete(textdocument, position, jsonDocument) as CompletionList | null) || NULL_COMPLETION;
 		},

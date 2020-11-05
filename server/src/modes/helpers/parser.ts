@@ -1,10 +1,12 @@
 import * as ts from "typescript";
 
 import { createDocumentRegions, EmbeddedRegion } from '../../embeddedSupport';
+import { AmisConfigSettings, defaultSettings } from "../../AmisConfigSettings";
 
-export function parseAmisJSON(content: string) {
+export function parseAmisJSON(content: string, config: AmisConfigSettings) {
 
 	const regions: EmbeddedRegion<'json'>[] = [];
+	const validSchemas = config?.schema?.map?.map(item => item.label);
 
 	function makeLeadingBlankSpace(node: ts.ReadonlyTextRange) {
 		const leadingContent = content.slice(0, node.pos);
@@ -25,6 +27,8 @@ export function parseAmisJSON(content: string) {
 	}
 
 	function addCodeToRegion(node: ts.ReadonlyTextRange, schema: string) {
+		const regionConfig = (config?.schema?.map?.filter(item => item.label == schema) || [])[0];
+
 		regions.push({
 			start: node.pos,
 			end: node.end,
@@ -32,6 +36,7 @@ export function parseAmisJSON(content: string) {
 			type: 'json',
 			text: getSourceInRange(node),
 			schema,
+			schemaUri: regionConfig.schema
 		});
 	}
 	/**
@@ -46,7 +51,7 @@ export function parseAmisJSON(content: string) {
 						(node as any).jsDoc.some((item: any) => {
 							if (item.comment) {
 								const comment = item.comment.trim();
-								if (['amis', 'amis-formitem'].indexOf(comment) !== -1) {
+								if (validSchemas.indexOf(comment) !== -1) {
 									schema = comment;
 									return true;
 								}
@@ -104,6 +109,7 @@ export function parseAmisJSON(content: string) {
 
 
 export const getDocumentRegions = createDocumentRegions(
-	(document) => parseAmisJSON(document.getText()),
+	(document, options) => parseAmisJSON(document.getText(), options),
 	undefined,
-	undefined);
+	undefined,
+	defaultSettings);

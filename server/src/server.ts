@@ -14,12 +14,14 @@ import {
 	CompletionItemKind,
 	TextDocumentPositionParams,
 	TextDocumentSyncKind,
-	InitializeResult
+	InitializeResult,
+	CodeActionKind
 } from 'vscode-languageserver';
 
 import {
 	TextDocument
 } from 'vscode-languageserver-textdocument';
+import { AmisConfigSettings, defaultSettings } from './AmisConfigSettings';
 import { getShadowLS } from './languageService';
 
 // Create a connection for the server, using Node's IPC as a transport.
@@ -59,6 +61,14 @@ connection.onInitialize((params: InitializeParams) => {
 			// Tell the client that this server supports code completion.
 			completionProvider: {
 				resolveProvider: true
+			},
+			codeActionProvider: {
+				codeActionKinds: [
+					CodeActionKind.Empty
+				]
+			},
+			executeCommandProvider: {
+				commands: []
 			}
 		}
 	};
@@ -85,36 +95,17 @@ connection.onInitialized(() => {
 	}
 });
 
-// The example settings
-interface ExampleSettings {
-	schema: {
-		map: { label: string, schema: string, isAmisStyleSchema: boolean }[]
-	};
-}
-
-// The global settings, used when the `workspace/configuration` request is not supported by the client.
-// Please note that this is not the case when using this server with the client provided in this example
-// but could happen with other clients.
-const defaultSettings: ExampleSettings = {
-	schema: {
-		map: [{
-			"label": "amis",
-			"schema": "https://fex-team.github.io/amis-editor-demo/schema.json",
-			isAmisStyleSchema: true
-		}]
-	}
-};
-let globalSettings: ExampleSettings = defaultSettings;
+let globalSettings: AmisConfigSettings = defaultSettings;
 
 // Cache the settings of all open documents
-let documentSettings: Map<string, Thenable<ExampleSettings>> = new Map();
+let documentSettings: Map<string, Thenable<AmisConfigSettings>> = new Map();
 
 connection.onDidChangeConfiguration(change => {
 	if (hasConfigurationCapability) {
 		// Reset all cached document settings
 		documentSettings.clear();
 	} else {
-		globalSettings = <ExampleSettings>(
+		globalSettings = <AmisConfigSettings>(
 			(change.settings.amisLanguageServer || defaultSettings)
 		);
 	}
@@ -125,7 +116,7 @@ connection.onDidChangeConfiguration(change => {
 	documents.all().forEach(validateTextDocument);
 });
 
-function getDocumentSettings(resource: string): Thenable<ExampleSettings> {
+function getDocumentSettings(resource: string): Thenable<AmisConfigSettings> {
 	if (!hasConfigurationCapability) {
 		return Promise.resolve(globalSettings);
 	}
@@ -192,6 +183,17 @@ connection.onHover(textDocumentPosition => {
 	if (document) {
 		return sls.doHover(document, textDocumentPosition.position);
 	}
+});
+
+connection.onCodeAction(codeActionParams => {
+	const document = documents.get(codeActionParams.textDocument.uri);
+	if (document) {
+		return sls.doCodeAction(document, codeActionParams.range);
+	}
+});
+
+connection.onExecuteCommand(commandRequest => {
+	return sls.doExecuteCommand(commandRequest.command, commandRequest.arguments || []);
 });
 
 connection.onCompletionResolve(

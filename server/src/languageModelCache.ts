@@ -1,5 +1,6 @@
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { logger } from './utils/logger';
+import { AmisConfigSettings } from "./AmisConfigSettings";
+
 
 export interface LanguageModelCache<T> {
 	get(document: TextDocument): T;
@@ -11,7 +12,7 @@ export interface LanguageModelCache<T> {
 
 interface DocumentParser<T> {
 	(document: TextDocument): T;
-	configure?(config: any): void;
+	configure?(config: AmisConfigSettings): void;
 }
 export function getLanguageModelCache<T>(
 	maxEntries: number,
@@ -37,7 +38,8 @@ export function getLanguageModelCache<T>(
 	}
 
 	return {
-		configure(config) {
+		configure(config : AmisConfigSettings) {
+			languageModels = {};
 			if (parse.configure) {
 				parse.configure(config);
 			}

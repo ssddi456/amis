@@ -1,8 +1,16 @@
 /**
  * 修改源码插入 $schema
  */
-import { JSONDocument, PropertyASTNode, ObjectASTNode, StringASTNode } from 'vscode-json-languageservice';
-import { shadowJSONSchemaKey, shadowJSONSchemaValue, shadowJSONFormSchemaValue, getSchemaValueByType } from './bridge';
+import {
+	JSONDocument,
+	PropertyASTNode,
+	ObjectASTNode,
+	StringASTNode
+} from 'vscode-json-languageservice';
+import {
+	shadowJSONSchemaKey,
+	getSchemaValueByType
+} from './bridge';
 
 
 export function hasSchemaNode(document: JSONDocument) {
@@ -18,15 +26,29 @@ export function hasSchemaNode(document: JSONDocument) {
 	return false;
 }
 
-export function insertSchema(document: JSONDocument, schemaType: string) {
+export function insertSchema(document: JSONDocument,
+	schemaType: string,
+	schemUrl?: string) {
 	if (!hasSchemaNode(document) && document.root && document.root.type == 'object') {
-		const schemaNode = getSchemaNode(document.root.offset, 0, document.root, schemaType);
+		const schemaNode = getSchemaNode(document.root.offset,
+			0,
+			document.root,
+			schemaType,
+			schemUrl) || getSchemaNode(document.root.offset,
+				0,
+				document.root,
+				schemaType);
 		document.root.properties.unshift(schemaNode);
 	}
 }
 
 
-export function getSchemaNode(offset: number, colonOffset: number, parent: ObjectASTNode, schemaType: string): PropertyASTNode {
+export function getSchemaNode(offset: number,
+	colonOffset: number,
+	parent: ObjectASTNode,
+	schemaType: string,
+	schemUrl?: string,
+): PropertyASTNode {
 	const key: StringASTNode = {
 		type: 'string',
 		offset,
@@ -37,7 +59,7 @@ export function getSchemaNode(offset: number, colonOffset: number, parent: Objec
 		type: 'string',
 		offset,
 		length: 0,
-		value: getSchemaValueByType(schemaType),
+		value: schemUrl || getSchemaValueByType(schemaType),
 	};
 	const property: PropertyASTNode = {
 		type: 'property',
