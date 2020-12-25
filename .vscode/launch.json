@@ -16,7 +16,7 @@
 			"outFiles": [
 				"${workspaceRoot}/server/out/test/**/*.js"
 			],
-			"preLaunchTask": "npm: compile"
+			"preLaunchTask": "npm: test-compile"
 		},
 		{
 			"name": "Language extensionHost",
@@ -32,7 +32,7 @@
 			"outFiles": [
 				"${workspaceRoot}/server/out/test/**/*.js"
 			],
-			"preLaunchTask": "npm: compile"
+			"preLaunchTask": "npm: test-compile"
 		},
 		{
             "name": "test server",
