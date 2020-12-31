@@ -12,8 +12,11 @@ client/node_modules/**
 !client/node_modules/vscode-languageserver-protocol/**
 !client/node_modules/vscode-languageserver-types/**
 !client/node_modules/semver/**
-server
-client
-node_modules
+server/src
+server/test
+server/out/test
+client/src
+client/test
+client/out/test
 webpack.config.js
 tsconfig.json
