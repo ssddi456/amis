@@ -1,4 +1,4 @@
-import 'mocha';
+import * as mocha from 'mocha';
 import 'ts-node';
 import { assert } from "chai";
 
@@ -11,8 +11,17 @@ import * as ts from 'typescript';
 import { getDocumentRegions, parseAmisJSON } from '../src/modes/helpers/parser';
 import { EmbeddedRegion } from '../src/embeddedSupport';
 import { getShadowLS } from '../src/languageService';
-import { defaultSettings } from '../src/AmisConfigSettings';
+import { AmisConfigSettings, defaultSettings } from '../src/AmisConfigSettings';
 
+const customSettings: AmisConfigSettings = {
+    schema: {
+        map: [...defaultSettings.schema.map, {
+            label: 'kemis',
+            schema: 'http://localhost:8001/schema.json',
+            isAmisStyleSchema: true
+        }]
+    }
+};
 interface ItemDescription {
     label: string;
     detail?: string;
@@ -23,7 +32,10 @@ interface ItemDescription {
     sortText?: string;
 }
 
-
+after(() => {
+    console.log('all done');
+    setTimeout(() => process.exit(0), 3000);
+});
 
 const assertCompletion = function (completions: CompletionList, expected: ItemDescription, document: TextDocument, offset: number) {
     const matches = completions.items.filter(completion => {
@@ -116,14 +128,17 @@ describe('test json ls hover', function () {
     });
 });
 
+function testParseRegions(
+    code: string,
+    expected: EmbeddedRegion[],
+    setting: AmisConfigSettings = defaultSettings
+) {
+    const sourceFile = ts.createSourceFile('test.ts', code, ts.ScriptTarget.ESNext);
+    const regions = parseAmisJSON(sourceFile.text, setting);
+    assert.deepEqual(regions, expected, 'regions should equal');
+}
+
 describe('parse text regions', function () {
-
-    function testParseRegions(code: string, expected: EmbeddedRegion[]) {
-        const sourceFile = ts.createSourceFile('test.ts', code, ts.ScriptTarget.ESNext);
-        const regions = parseAmisJSON(sourceFile.text, defaultSettings);
-        assert.deepEqual(regions, expected, 'regions should equal');
-    }
-
     it('props in toplevel declaration', async function () {
         testParseRegions(`
 /** amis */	
@@ -136,6 +151,8 @@ const obj = {
                     end: 46,
                     type: 'json',
                     languageId: 'amisjson',
+                    schema: "amis",
+                    schemaUri: "https://fex-team.github.io/amis-editor-demo/schema.json",
                     text: `
             
             {
@@ -161,6 +178,8 @@ export const schema = {
                     end: 77,
                     type: 'json',
                     languageId: 'amisjson',
+                    schema: "amis",
+                    schemaUri: "https://fex-team.github.io/amis-editor-demo/schema.json",
                     text: `
            
                {
@@ -172,6 +191,8 @@ export const schema = {
                     end: 159,
                     type: 'json',
                     languageId: 'amisjson',
+                    schema: "amis",
+                    schemaUri: "https://fex-team.github.io/amis-editor-demo/schema.json",
                     text: `
            
                 
@@ -206,6 +227,8 @@ function test() {
                     end: 107,
                     type: 'json',
                     languageId: 'amisjson',
+                    schema: "amis",
+                    schemaUri: "https://fex-team.github.io/amis-editor-demo/schema.json",
                     text: `
                  
                
@@ -218,6 +241,8 @@ function test() {
                     end: 192,
                     type: 'json',
                     languageId: 'amisjson',
+                    schema: "amis",
+                    schemaUri: "https://fex-team.github.io/amis-editor-demo/schema.json",
                     text: `
                  
                
@@ -235,15 +260,40 @@ function test() {
     });
 });
 
+describe('parse text regions with custom setting', function () {
+    it('props in toplevel declaration', async function () {
+        testParseRegions(`
+/** kemis */	
+const obj = {
+    type: "page"
+};`,
+            [
+                {
+                    start: 26,
+                    end: 47,
+                    type: 'json',
+                    languageId: 'amisjson',
+                    schema: "kemis",
+                    schemaUri: "http://localhost:8001/schema.json",
+                    text: `
+             
+            {
+    type: "page"
+}`}
+            ],
+            customSettings);
+    });
+});
+
+function testGetDocumentAtPoint(code: string, position: Position, languageId: string) {
+    const sourceFile = TextDocument.create('test://test/test.ts', 'typescript', 0, code);
+    const documentRegion = getDocumentRegions(sourceFile);
+    assert.equal(documentRegion.getLanguageAtPosition(position), languageId, 'languageId should equal');
+}
 
 describe('get amisjson at certen point', function () {
 
 
-    function testGetDocumentAtPoint(code: string, position: Position, languageId: string) {
-        const sourceFile = TextDocument.create('test://test/test.ts', 'typescript', 0, code);
-        const documentRegion = getDocumentRegions(sourceFile);
-        assert.equal(documentRegion.getLanguageAtPosition(position), languageId, 'languageId should equal');
-    }
     it('get amisjson at object literal', function () {
         testGetDocumentAtPoint(`
 function test() {
@@ -264,39 +314,29 @@ function test() {
 
 
 describe('get amisjson hover at point', function () {
-    function testGetDocumentAtPoint(code: string, position: Position, languageId: string) {
-        const sourceFile = TextDocument.create('test://test/test.ts', 'typescript', 0, code);
-        const documentRegion = getDocumentRegions(sourceFile);
-        assert.equal(documentRegion.getLanguageAtPosition(position), languageId, 'languageId should equal');
-    }
-
+    let sls: ReturnType<typeof getShadowLS>;
 
     async function testGetDocumentHoverAtPoint(code: string, position: Position, expected: Hover) {
         const sourceFile = TextDocument.create('test://test/test.ts', 'typescript', 0, code);
-        const sls = getShadowLS();
-        sls.initialize(null);
+        debugger
         const hover = await sls.doHover(sourceFile, position);
         assert.deepEqual(hover, expected);
-        sls.dispose();
     }
-    it('get amisjson at object literal', function () {
-        testGetDocumentAtPoint(`
-function test() {
-    /** amis */
-    var obj6 = {
-        type: "page",
-        body: "declaration"
-    };
 
-    /** amis */
-    obj6 = {
-        type: "page",
-        body: "new value"
-    };
-}`, { line: 4, character: 11 }, 'amisjson');
+    before(() => {
+        this.timeout(5000)
+        sls = getShadowLS();
+        sls.initialize(null);
+        sls.configure(defaultSettings);
+    });
+
+    after(() => {
+        console.log('suite done');
+        sls.dispose();        
     });
 
     it('get hover at object literal', async function () {
+        this.timeout(5000);
         await testGetDocumentHoverAtPoint(`
 function test() {
     /** amis */
@@ -318,9 +358,9 @@ function test() {
 
 
     it('get hover info for refed schema', async function () {
+        this.timeout(5000);
         await testGetDocumentHoverAtPoint(`/** amis */
 export default {
-    "$schema": "https://houtai.baidu.com/v2/schemas/page.json#",
     "title": "表单各种展示模式汇总",
     "remark": "展示各种模式的 Form",
     "body": [
@@ -342,6 +382,7 @@ export default {
     });
 
     it('get hover info for nest schema', async function () {
+        this.timeout(5000);
         await testGetDocumentHoverAtPoint(`/** amis */
 export default {
     type: "page",
@@ -349,7 +390,7 @@ export default {
         {
             "type": "form",
             "controls": [{
-                type: "text"
+                type: "number"
             }]
         }
     ]
@@ -366,17 +407,63 @@ export default {
 
 });
 
-describe('get amisjson completion at point', function () {
-    async function testGetDocumentCompletionAtPoint(code: string, position: Position) {
-        const sourceFile = TextDocument.create('test://test/test.ts', 'typescript', 0, code);
-        const sls = getShadowLS();
-        sls.initialize(null);
+describe('get kemis hover at point', function () {
+    let sls: ReturnType<typeof getShadowLS>;
 
-        const completion = await sls.doComplete(sourceFile, position);
-        // console.log('completion', completion);
-        
-        sls.dispose();
+    async function testGetDocumentHoverAtPoint(code: string, position: Position, expected: Hover) {
+        const sourceFile = TextDocument.create('test://test/test.ts', 'typescript', 0, code);
+        debugger
+        const hover = await sls.doHover(sourceFile, position);
+        assert.deepEqual(hover, expected);
     }
+
+    before(() => {
+        this.timeout(5000)
+        sls = getShadowLS();
+        sls.initialize(null);
+        sls.configure(customSettings);
+    });
+
+    after(() => {
+        console.log('suite done');
+        sls.dispose();        
+    });
+
+    it('get hover at object literal', async function () {
+        this.timeout(5000);
+        await testGetDocumentHoverAtPoint(`
+function test() {
+    /** kemis */
+    var obj6 = {
+        type: "page",
+        body: "declaration"
+    };
+
+    /** kemis */
+    obj6 = {
+        type: "page",
+        body: "new value"
+    };
+}`, { line: 4, character: 11 }, {
+            contents: ['Page渲染器'],
+            range: { start: { line: 4, character: 8 }, end: { line: 4, character: 12 } }
+        });
+    });
+
+})
+
+async function testGetDocumentCompletionAtPoint(code: string, position: Position) {
+    const sourceFile = TextDocument.create('test://test/test.ts', 'typescript', 0, code);
+    const sls = getShadowLS();
+    sls.initialize(null);
+
+    const completion = await sls.doComplete(sourceFile, position);
+    // console.log('completion', completion);
+
+    sls.dispose();
+}
+describe('get amisjson completion at point', function () {
+    this.timeout(5000);
     it('get amisjson at object literal', async function () {
         await testGetDocumentCompletionAtPoint(`function test() {
     /** amis */

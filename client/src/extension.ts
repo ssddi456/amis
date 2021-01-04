@@ -67,7 +67,6 @@ export function activate(context: ExtensionContext) {
 			}
 		},
 		initializationFailedHandler(error: ResponseError<InitializeError> | Error | any): boolean {
-			debugger
 			console.log(error);
 			return false;
 		}
@@ -78,8 +77,7 @@ export function activate(context: ExtensionContext) {
 		'AmislanguageServer',
 		'Amis Language Server',
 		serverOptions,
-		clientOptions,
-		true
+		clientOptions
 	);
 	client.onReady().then(() => {
 		console.log('client ready');
@@ -100,10 +98,10 @@ export function activate(context: ExtensionContext) {
 			// Get path to resource on disk
 			const onDiskPath = Uri.file(path.join(context.extensionPath, 'assets', 'preview_inner.html'));
 			// And get the special URI to use with the webview
-			const preview_inner_url = panel.webview.asWebviewUri(onDiskPath) +  '?pid=kemis_pc&version=1.0.20';
+			const preview_inner_url = panel.webview.asWebviewUri(onDiskPath) + '?pid=kemis_pc&version=1.0.20';
 			panel.webview.html = await new Promise((res) => {
 				fs.readFile(path.join(__dirname, '../../assets/preview_container.html'), 'utf8', function (err, content) {
-					res((content || '').replace(/src="preview_inner\.html/, 'src="' + preview_inner_url)) ;
+					res((content || '').replace(/src="preview_inner\.html/, 'src="' + preview_inner_url));
 				});
 			});
 
@@ -126,7 +124,7 @@ export function activate(context: ExtensionContext) {
 			if (previewPanal) {
 				previewPanal.webview.postMessage({ schema: infos })
 			} else {
-				
+
 			}
 		});
 	});

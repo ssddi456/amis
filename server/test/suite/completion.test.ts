@@ -11,7 +11,7 @@ const timeout = 300 * ciSlowNess
 
 suite('auto complete', () => {
     before(async () => {
-        await createTestFile('auto-complete.ts');
+        await createTestFile('auto-complete.tsx');
         await activateExtension()
     })
 

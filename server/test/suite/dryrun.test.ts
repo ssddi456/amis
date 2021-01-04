@@ -4,7 +4,7 @@ import { before } from 'mocha'
 
 suite('auto complete', () => {
     before(async () => {
-        await createTestFile('hover.ts');
+        await createTestFile('hover.tsx');
         await activateExtension()
     });
 

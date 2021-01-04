@@ -1,5 +1,4 @@
 {
-    "$schema": "../../src/schemas/schema.json",
     "type": "page",
     "body": [{
         "type": "form",

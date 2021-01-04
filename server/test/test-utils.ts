@@ -77,7 +77,7 @@ async function typeDelete(times: number = 1): Promise<void> {
   const offset = vscode.window.activeTextEditor!.document.offsetAt(
     vscode.window.activeTextEditor!.selection.active
   )
-  await new Promise(async resolve => {
+  await new Promise<void>(async resolve => {
     await vscode.window.activeTextEditor!.edit(editBuilder => {
       editBuilder.delete(
         new vscode.Range(
@@ -124,7 +124,7 @@ async function type(text: string, speed = 150): Promise<void> {
 }
 
 async function waitForAutoComplete(timeout: 'never' | number) {
-  return new Promise(resolve => {
+  return new Promise<void>(resolve => {
     const disposable = vscode.workspace.onDidChangeTextDocument(() => {
       disposable.dispose()
       resolve()

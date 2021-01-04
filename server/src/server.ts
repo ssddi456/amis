@@ -35,11 +35,12 @@ let connection: Connection = createConnection(ProposedFeatures.all);
 // Create a simple text document manager. 
 let documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 
-let hasConfigurationCapability: boolean = false;
+let hasConfigurationCapability: boolean = true;
 let hasWorkspaceFolderCapability: boolean = false;
 let hasDiagnosticRelatedInformationCapability: boolean = false;
 
 const sls = getShadowLS();
+let globalSettings: AmisConfigSettings = defaultSettings;
 
 connection.onInitialize((params: InitializeParams) => {
 	sls.initialize(null);
@@ -88,7 +89,7 @@ connection.onInitialize((params: InitializeParams) => {
 	return result;
 });
 
-connection.onInitialized(() => {
+connection.onInitialized(async () => {
 
 	if (hasConfigurationCapability) {
 		// Register for all configuration changes.
@@ -99,9 +100,14 @@ connection.onInitialized(() => {
 			connection.console.log('Workspace folder change event received.');
 		});
 	}
+
+	globalSettings = await connection.workspace.getConfiguration({
+		section: 'amisLanguageServer'
+	});
+
+	sls.configure(globalSettings);
 });
 
-let globalSettings: AmisConfigSettings = defaultSettings;
 
 // Cache the settings of all open documents
 let documentSettings: Map<string, Thenable<AmisConfigSettings>> = new Map();

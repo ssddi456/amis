@@ -10,7 +10,7 @@ const timeout = 300 * ciSlowNess
 
 suite('auto complete', () => {
     before(async () => {
-        await createTestFile('hover.ts');
+        await createTestFile('hover.tsx');
         await activateExtension()
     });
 

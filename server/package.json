@@ -24,8 +24,9 @@
 		"vscode-uri": "^2.1.2"
 	},
 	"scripts": {
-		"test": "mocha -r ts-node/register --reporter spec --recursive --extension ts",
-		"test-w": "mocha -r ts-node/register --watch --reporter spec --recursive --extension ts"
+		"test": "mocha -r ts-node/register --reporter spec --extension ts test/index.ts",
+		"debug": "mocha --inspect-brk -r ts-node/register --reporter spec --extension ts test/index.ts",
+		"test-w": "mocha -r ts-node/register --watch --reporter spec --extension ts test/index.ts"
 	},
 	"devDependencies": {
 		"@types/glob": "^7.1.3",
