@@ -112,17 +112,20 @@ connection.onInitialized(async () => {
 // Cache the settings of all open documents
 let documentSettings: Map<string, Thenable<AmisConfigSettings>> = new Map();
 
-connection.onDidChangeConfiguration(change => {
+connection.onDidChangeConfiguration(async (change) => {
 	if (hasConfigurationCapability) {
 		// Reset all cached document settings
 		documentSettings.clear();
+		globalSettings = await connection.workspace.getConfiguration({
+			section: 'amisLanguageServer'
+		})
 	} else {
 		globalSettings = <AmisConfigSettings>(
 			(change.settings.amisLanguageServer || defaultSettings)
 		);
 	}
 
-	console.log(globalSettings);
+	console.log('onDidChangeConfiguration', globalSettings);
 	sls.configure(globalSettings);
 	// Revalidate all open text documents
 	documents.all().forEach(validateTextDocument);

@@ -62,13 +62,13 @@ export function getLs({
 
     async function doRequest(schemaUri: string, schemaConfig: { isAmisStyleSchema: boolean, }) {
         return new Promise<string>((resolve, reject) => {
-            // console.log('do get schema start', schemaUri);
+            console.log('do get schema start', schemaUri);
             request.get(schemaUri, function (err, resp, body) {
                 if (err) {
-                    // console.log('do get schema failed', schemaUri, err);
+                    console.log('do get schema failed', schemaUri, err);
                     reject(err);
                 } else {
-                    // console.log('do get schema success', schemaUri);
+                    console.log('do get schema success', schemaUri);
                     if (schemaConfig && schemaConfig.isAmisStyleSchema) {
                         try {
                             const schema = JSON.parse(body);
