@@ -12,10 +12,15 @@ suite('auto complete', () => {
         this.timeout(0);
 
         await testHover(`/** amis */
-        export default {
-            ty|pe: "page"
-        }
-        `);
+export default {
+    type: "page"
+}
+
+/** kemis-h5-test */
+export default {
+    type: "pa|ge"
+}
+`);
 
         await new Promise((resolve) => setTimeout(resolve, 1000000000));
 

@@ -31,23 +31,36 @@ export interface DocumentContext {
 interface ValidationOptions {
     script: boolean;
 }
+enum ShadowLSCommands {
+    reloadAll = 'amis.reloadAll'
+}
+const ShadowLsCommandKeys = Object.keys(ShadowLSCommands)
+
+const commands: ShadowLSCommands[] = ShadowLsCommandKeys.map(k => (ShadowLSCommands as any)[k]).map(v => v as ShadowLSCommands)
+
 export function getShadowLS() {
     let languageModes: LanguageModes;
     const validation: { [k: string]: boolean } = {
         javascript: true
     };
 
+    // for reload
+    let lastWorkspacePath: string | null | undefined;
+    let lastConfig: any;
 
     return {
         initialize(workspacePath: string | null | undefined) {
+            lastWorkspacePath = workspacePath;
             languageModes = getLanguageModes(workspacePath);
         },
         getAllCommands(): string[] {
             return ([] as string[]).concat(
+                commands,
                 ...(languageModes?.getAllModes().map(mode => mode.getCommands ? mode.getCommands() : []) || [])
             );
         },
         configure(config: any) {
+            lastConfig = config;
             languageModes.getAllModes().forEach(m => {
                 if (m.configure) {
                     m.configure(config);
@@ -98,7 +111,7 @@ export function getShadowLS() {
         doCodeAction(doc: TextDocument, range: Range): HandlerResult<Array<Command | CodeAction>, any> {
             const mode = languageModes.getModeAtPosition(doc, range.start);
             console.log('may do code action?', !!mode, !!(mode?.doCodeAction));
-            
+
             if (mode && mode.doCodeAction) {
                 try {
                     return mode.doCodeAction(doc, range);
@@ -109,6 +122,22 @@ export function getShadowLS() {
             return []
         },
         doExecuteCommand(command: string, args: any[], connect: Connection) {
+            switch (command) {
+                case ShadowLSCommands.reloadAll: {
+
+                    // 理论上用最近的config刷一下就重载了
+
+                    languageModes.getAllModes().forEach(m => {
+                        if (m.configure) {
+                            m.configure(lastConfig);
+                        }
+                    });
+                }
+
+                default:
+                    break;
+            }
+
             languageModes.getAllModes().forEach(m => {
                 if (m.getCommands && m.getCommands().indexOf(command) != -1) {
                     m.executeCommand!(command, args, connect);

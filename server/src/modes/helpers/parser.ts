@@ -22,11 +22,11 @@ export function parseAmisJSON(content: string, config: AmisConfigSettings) {
 		return ret.join('');
 	}
 
-	function getSourceInRange(node: ts.ReadonlyTextRange) {
+	function getSourceInRange(node: ts.Node) {
 		return makeLeadingBlankSpace(node) + content.slice(node.pos, node.end);
 	}
 
-	function addCodeToRegion(node: ts.ReadonlyTextRange, schema: string) {
+	function addCodeToRegion(node: ts.Node, schema: string) {
 		const regionConfig = (config?.schema?.map?.filter(item => item.label == schema) || [])[0];
 
 		regions.push({
