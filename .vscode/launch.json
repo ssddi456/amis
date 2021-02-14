@@ -1,50 +1,50 @@
 // A launch configuration that compiles the extension and then opens it inside a new window
 {
-	"version": "0.2.0",
-	"configurations": [
-		{
-			"name": "Language Server E2E Test",
-			"type": "extensionHost",
-			"request": "launch",
-			"runtimeExecutable": "${execPath}",
-			"args": [
-				"--disable-extensions",
-				"--extensionDevelopmentPath=${workspaceRoot}",
-				"--extensionTestsPath=${workspaceRoot}/server/out/test/suite/index",
-				"${workspaceRoot}/server/test/suite"
-			],
-			"outFiles": [
-				"${workspaceRoot}/server/out/test/**/*.js"
-			],
-			"preLaunchTask": "npm: compile"
-		},
-		{
-			"name": "Language extensionHost",
-			"type": "extensionHost",
-			"request": "launch",
-			"runtimeExecutable": "${execPath}",
-			"args": [
-				"--disable-extensions",
-				"--extensionDevelopmentPath=${workspaceRoot}",
-				"--extensionTestsPath=${workspaceRoot}/server/out/test/suite/index",
-				"${workspaceRoot}/server/test/suite"
-			],
-			"outFiles": [
-				"${workspaceRoot}/server/out/test/**/*.js"
-			],
-			"preLaunchTask": "npm: compile"
-		},
-		{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Language Server E2E Test",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "--disable-extensions",
+                "--extensionDevelopmentPath=${workspaceRoot}",
+                "--extensionTestsPath=${workspaceRoot}/server/out/test/suite/index",
+                "${workspaceRoot}/server/test/suite"
+            ],
+            "outFiles": [
+                "${workspaceRoot}/server/out/test/**/*.js"
+            ],
+            "preLaunchTask": "npm: compile"
+        },
+        {
+            "name": "Language extensionHost",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "--disable-extensions",
+                "--extensionDevelopmentPath=${workspaceRoot}",
+                "--extensionTestsPath=${workspaceRoot}/server/out/test/suite/index",
+                "${workspaceRoot}/server/test/suite"
+            ],
+            "outFiles": [
+                "${workspaceRoot}/server/out/test/**/*.js"
+            ],
+            "preLaunchTask": "npm: compile"
+        },
+        {
             "name": "test server",
             "type": "node",
             "request": "launch",
             "program": "${workspaceRoot}/server/node_modules/mocha/bin/_mocha",
             "stopOnEntry": true,
             "args": [
-				"-r", "ts-node/register",
-				"--reporter", "spec",
-				"--recursive",
-				"--extension ts",
+                "-r", "ts-node/register",
+                "--reporter", "spec",
+                "--recursive",
+                "--extension ts",
                 "--no-timeouts",
                 "test\\test-parser.ts"
             ],
@@ -54,5 +54,5 @@
                 "NODE_ENV": "testing"
             }
         }
-	]
+    ]
 }

@@ -2,26 +2,26 @@ import { LanguageMode } from '../languageModes';
 import { CompletionList } from 'vscode-languageserver-types';
 
 export const NULL_HOVER = {
-	contents: []
+    contents: []
 };
 
 export const NULL_SIGNATURE = {
-	signatures: [],
-	activeSignature: 0,
-	activeParameter: 0
+    signatures: [],
+    activeSignature: 0,
+    activeParameter: 0
 };
 
 export const NULL_COMPLETION: CompletionList = {
-	isIncomplete: false,
-	items: [],
+    isIncomplete: false,
+    items: [],
 };
 
 export const nullMode: LanguageMode = {
-	getId: () => '',
-	onDocumentRemoved() { },
-	dispose() { },
-	doHover: (...args: any[]) => NULL_HOVER,
-	doComplete: (...args: any[]) => NULL_COMPLETION,
-	doSignatureHelp: (...args: any[]) => NULL_SIGNATURE,
-	findReferences: (...args: any[]) => []
+    getId: () => '',
+    onDocumentRemoved() { },
+    dispose() { },
+    doHover: (...args: any[]) => NULL_HOVER,
+    doComplete: (...args: any[]) => NULL_COMPLETION,
+    doSignatureHelp: (...args: any[]) => NULL_SIGNATURE,
+    findReferences: (...args: any[]) => []
 };

@@ -1,42 +1,44 @@
 {
-	"name": "amis-language-server",
-	"description": "a language server of amis in node.",
-	"version": "1.0.0",
-	"author": "ssddi456",
-	"license": "MIT",
-	"engines": {
-		"node": "*"
-	},
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/ssddi456/amis"
-	},
-	"dependencies": {
-		"@types/chai": "^4.2.12",
-		"@types/parse-gitignore": "^1.0.0",
-		"@types/request": "^2.48.5",
-		"parse-gitignore": "^1.0.1",
-		"request": "^2.88.2",
-		"typescript": "^4.0.3",
-		"vscode-json-languageserver": "^1.2.3",
-		"vscode-languageserver": "^6.1.1",
-		"vscode-languageserver-textdocument": "^1.0.1",
-		"vscode-uri": "^2.1.2"
-	},
-	"scripts": {
-		"test": "mocha -r ts-node/register --reporter spec --extension ts test/index.ts",
-		"debug": "mocha --inspect-brk -r ts-node/register --reporter spec --extension ts test/index.ts",
-		"test-w": "mocha -r ts-node/register --watch --reporter spec --extension ts test/index.ts"
-	},
-	"devDependencies": {
-		"@types/glob": "^7.1.3",
-		"@types/rimraf": "^3.0.0",
-		"@types/vscode": "^1.51.0",
-		"chai": "^4.2.0",
-		"glob": "^7.1.6",
-		"mocha": "^8.1.3",
-		"rimraf": "^3.0.2",
-		"ts-node": "^9.0.0",
-		"vscode-test": "^1.4.0"
-	}
+    "name": "amis-language-server",
+    "description": "a language server of amis in node.",
+    "version": "1.0.0",
+    "author": "ssddi456",
+    "license": "MIT",
+    "engines": {
+        "node": "*"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/ssddi456/amis"
+    },
+    "dependencies": {
+        "@types/chai": "^4.2.12",
+        "@types/parse-gitignore": "^1.0.0",
+        "@types/request": "^2.48.5",
+        "parse-gitignore": "^1.0.1",
+        "request": "^2.88.2",
+        "typescript": "^4.0.3",
+        "vscode-json-languageserver": "^1.2.3",
+        "vscode-languageserver": "^6.1.1",
+        "vscode-languageserver-textdocument": "^1.0.1",
+        "vscode-uri": "^2.1.2"
+    },
+    "scripts": {
+        "test": "mocha -r ts-node/register --reporter spec --extension ts test/index.ts test/json_transform.ts",
+        "debug": "mocha --inspect-brk -r ts-node/register --reporter spec --extension ts test/index.ts test/json_transform.ts",
+        "test-w": "mocha -r ts-node/register --watch --reporter spec --extension ts test/index.ts",
+        "test-json": "mocha -r ts-node/register --reporter spec --extension ts test/json_transform.ts",
+        "test-json-w": "mocha -r ts-node/register --watch --reporter spec --extension ts test/json_transform.ts"
+    },
+    "devDependencies": {
+        "@types/glob": "^7.1.3",
+        "@types/rimraf": "^3.0.0",
+        "@types/vscode": "^1.51.0",
+        "chai": "^4.2.0",
+        "glob": "^7.1.6",
+        "mocha": "^8.1.3",
+        "rimraf": "^3.0.2",
+        "ts-node": "^9.0.0",
+        "vscode-test": "^1.4.0"
+    }
 }

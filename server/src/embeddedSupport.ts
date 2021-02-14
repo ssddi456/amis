@@ -10,24 +10,24 @@ export interface LanguageRange extends Range {
     attributeValue?: boolean;
 }
 
-export interface DocumentRegions<T = EmbeddedType> {
+export interface DocumentRegions<T = EmbeddedType, R = any> {
     getEmbeddedDocument(languageId: string): TextDocument;
     getEmbeddedDocumentByType(type: T): TextDocument;
     getLanguageRangeByType(type: T): LanguageRange | undefined;
     getLanguageRanges(range: Range): LanguageRange[];
-    getRegionAtPosition(positon: Position): EmbeddedRegion;
+    getRegionAtPosition(positon: Position): EmbeddedRegion<T, R>;
     getLanguageAtPosition(position: Position): string;
     getSubDocumentAtPosition(position: Position): TextDocument;
     getLanguagesInDocument(): string[];
     getImportedScripts(): string[];
-    getRegionIndex(region: EmbeddedRegion): number;
-    getRegionAtIndex(index: number): EmbeddedRegion;
+    getRegionIndex(region: EmbeddedRegion<T, R>): number;
+    getRegionAtIndex(index: number): EmbeddedRegion<T, R>;
     getSubDocumentAtIndex(index: number): TextDocument;
 }
 
 type EmbeddedType = 'template' | 'script' | 'style' | 'custom';
 
-export interface EmbeddedRegion<T = any> {
+export interface EmbeddedRegion<T = any, R = any> {
     languageId: string;
     start: number;
     end: number;
@@ -35,6 +35,7 @@ export interface EmbeddedRegion<T = any> {
     text?: string;
     schema?: string;
     schemaUri?: string;
+    meta?: R;
 }
 
 const defaultType: { [type: string]: string } = {
@@ -44,22 +45,22 @@ const defaultType: { [type: string]: string } = {
 };
 
 /** a example */
-export function createDocumentRegions(
-    parser: (document: TextDocument, parserOptions: AmisConfigSettings) => EmbeddedRegion[],
+export function createDocumentRegions<T, R>(
+    parser: (document: TextDocument, parserOptions: AmisConfigSettings) => EmbeddedRegion<T, R>[],
     defaultTypeMap: { [type: string]: string } = defaultType,
     defaultLanguageId: string = '',
     defaultParserOptions: AmisConfigSettings
-): (document: TextDocument) => DocumentRegions {
+): (document: TextDocument) => DocumentRegions<T, R> {
 
-     function getDocumentRegions(document: TextDocument): DocumentRegions {
+    function getDocumentRegions(document: TextDocument): DocumentRegions<T, R> {
         const regions: EmbeddedRegion[] = parser(document, defaultParserOptions);
         const importedScripts: string[] = [];
 
         return {
             getLanguageRanges: (range: Range) => getLanguageRanges(document, regions, range),
-            getLanguageRangeByType: (type: string) => getLanguageRangeByType(document, regions, type),
+            getLanguageRangeByType: (type) => getLanguageRangeByType(document, regions, (type as any)),
             getEmbeddedDocument: (languageId: string) => getEmbeddedDocument(document, regions, languageId),
-            getEmbeddedDocumentByType: (type: string) => getEmbeddedDocumentByType(document, regions, type),
+            getEmbeddedDocumentByType: (type) => getEmbeddedDocumentByType(document, regions, (type as any)),
             getRegionAtPosition: (position: Position) => getRegionAtPosition(document, regions, position),
             getSubDocumentAtPosition: (position: Position) => getSubDocumentAtPosition(document, regions, position),
             getLanguageAtPosition: (position: Position) => getLanguageAtPosition(document, regions, position),
@@ -78,10 +79,10 @@ export function createDocumentRegions(
                 }
                 const documentUrl = URI.file(document.uri);
                 const ext = path.extname(documentUrl.fsPath);
-                const newDocumentUrlPath = path.basename( documentUrl.fsPath, ext) + `.${region.languageId}_${index}` + ext;
+                const newDocumentUrlPath = path.basename(documentUrl.fsPath, ext) + `.${region.languageId}_${index}` + ext;
                 const newDocumentUrl = URI.file(newDocumentUrlPath);
                 const result = getDocumentContentOfRegion(document, region);
-        
+
                 return TextDocument.create(newDocumentUrl.toString(), region.languageId, document.version, result);
             }
         };
@@ -198,7 +199,7 @@ export function createDocumentRegions(
         }
         const documentUrl = URI.file(document.uri);
         const ext = path.extname(documentUrl.fsPath);
-        const newDocumentUrlPath = path.basename( documentUrl.fsPath, ext) + `.${region.languageId}_${index}` + ext;
+        const newDocumentUrlPath = path.basename(documentUrl.fsPath, ext) + `.${region.languageId}_${index}` + ext;
         const newDocumentUrl = URI.file(newDocumentUrlPath);
         const result = getDocumentContentOfRegion(document, region);
 

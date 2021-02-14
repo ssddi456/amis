@@ -10,12 +10,11 @@ import {
     TextDocument
 } from 'vscode-json-languageservice';
 
-import * as fs from 'fs';
 import {
     CompletionList,
     CompletionItem,
 } from 'vscode-languageserver-types';
-import { insertSchema } from './helpers/preprocesser';
+import { insertSchema, prepareDocuments } from './helpers/preprocesser';
 import { defaultSchema, shadowJSONSchemaPrefix, shadowJSONSchemaValue } from './helpers/bridge';
 import { NULL_COMPLETION } from './nullMode';
 import { AmisConfigSettings, defaultSettings } from '../AmisConfigSettings';
@@ -101,7 +100,7 @@ export function getLs({
 }
 
 export function getAmisJsonMode(
-    documentRegions: LanguageModelCache<DocumentRegions>,
+    documentRegions: LanguageModelCache<DocumentRegions<'json', any>>,
     workspacePath: string | null | undefined
 ): LanguageMode {
 
@@ -128,19 +127,14 @@ export function getAmisJsonMode(
         },
 
         doHover(document, position) {
-            const region = documentRegions.get(document).getRegionAtPosition(position);
-            const textdocument = documentRegions.get(document).getSubDocumentAtPosition(position);
-            const jsonDocument = ls.parseJSONDocument(textdocument);
-            insertSchema(jsonDocument, region.schema!, region.schemaUri);
+
+            const [textdocument, jsonDocument] = prepareDocuments(document, position, documentRegions, ls);
 
             return ls.doHover(textdocument, position, jsonDocument)
         },
 
         async doComplete(document, position): Promise<CompletionList> {
-            const region = documentRegions.get(document).getRegionAtPosition(position);
-            const textdocument = documentRegions.get(document).getSubDocumentAtPosition(position);
-            const jsonDocument = ls.parseJSONDocument(textdocument);
-            insertSchema(jsonDocument, region.schema!, region.schemaUri);
+            const [textdocument, jsonDocument] = prepareDocuments(document, position, documentRegions, ls);
 
             return (await ls.doComplete(textdocument, position, jsonDocument) as CompletionList | null) || NULL_COMPLETION;
         },

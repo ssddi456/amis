@@ -3,24 +3,24 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import {
-	createConnection,
-	Connection,
-	TextDocuments,
-	Diagnostic,
-	DiagnosticSeverity,
-	ProposedFeatures,
-	InitializeParams,
-	DidChangeConfigurationNotification,
-	CompletionItem,
-	CompletionItemKind,
-	TextDocumentPositionParams,
-	TextDocumentSyncKind,
-	InitializeResult,
-	CodeActionKind
+    createConnection,
+    Connection,
+    TextDocuments,
+    Diagnostic,
+    DiagnosticSeverity,
+    ProposedFeatures,
+    InitializeParams,
+    DidChangeConfigurationNotification,
+    CompletionItem,
+    CompletionItemKind,
+    TextDocumentPositionParams,
+    TextDocumentSyncKind,
+    InitializeResult,
+    CodeActionKind
 } from 'vscode-languageserver';
 
 import {
-	TextDocument
+    TextDocument
 } from 'vscode-languageserver-textdocument';
 import { AmisConfigSettings, defaultSettings } from './AmisConfigSettings';
 import { getShadowLS } from './languageService';
@@ -43,69 +43,69 @@ const sls = getShadowLS();
 let globalSettings: AmisConfigSettings = defaultSettings;
 
 connection.onInitialize((params: InitializeParams) => {
-	sls.initialize(null);
+    sls.initialize(null);
 
-	let capabilities = params.capabilities;
+    let capabilities = params.capabilities;
 
-	// Does the client support the `workspace/configuration` request?
-	// If not, we fall back using global settings.
-	hasConfigurationCapability = !!(
-		capabilities.workspace && !!capabilities.workspace.configuration
-	);
-	hasWorkspaceFolderCapability = !!(
-		capabilities.workspace && !!capabilities.workspace.workspaceFolders
-	);
-	hasDiagnosticRelatedInformationCapability = !!(
-		capabilities.textDocument &&
-		capabilities.textDocument.publishDiagnostics &&
-		capabilities.textDocument.publishDiagnostics.relatedInformation
-	);
+    // Does the client support the `workspace/configuration` request?
+    // If not, we fall back using global settings.
+    hasConfigurationCapability = !!(
+        capabilities.workspace && !!capabilities.workspace.configuration
+    );
+    hasWorkspaceFolderCapability = !!(
+        capabilities.workspace && !!capabilities.workspace.workspaceFolders
+    );
+    hasDiagnosticRelatedInformationCapability = !!(
+        capabilities.textDocument &&
+        capabilities.textDocument.publishDiagnostics &&
+        capabilities.textDocument.publishDiagnostics.relatedInformation
+    );
 
-	const result: InitializeResult = {
-		capabilities: {
-			textDocumentSync: TextDocumentSyncKind.Incremental,
-			hoverProvider: true,
-			// Tell the client that this server supports code completion.
-			completionProvider: {
-				resolveProvider: true
-			},
-			codeActionProvider: {
-				codeActionKinds: [
-					CodeActionKind.Empty
-				]
-			},
-			executeCommandProvider: {
-				commands: sls.getAllCommands(),
-			}
-		}
-	};
-	if (hasWorkspaceFolderCapability) {
-		result.capabilities.workspace = {
-			workspaceFolders: {
-				supported: true
-			}
-		};
-	}
-	return result;
+    const result: InitializeResult = {
+        capabilities: {
+            textDocumentSync: TextDocumentSyncKind.Incremental,
+            hoverProvider: true,
+            // Tell the client that this server supports code completion.
+            completionProvider: {
+                resolveProvider: true
+            },
+            codeActionProvider: {
+                codeActionKinds: [
+                    CodeActionKind.Empty
+                ]
+            },
+            executeCommandProvider: {
+                commands: sls.getAllCommands(),
+            }
+        }
+    };
+    if (hasWorkspaceFolderCapability) {
+        result.capabilities.workspace = {
+            workspaceFolders: {
+                supported: true
+            }
+        };
+    }
+    return result;
 });
 
 connection.onInitialized(async () => {
 
-	if (hasConfigurationCapability) {
-		// Register for all configuration changes.
-		connection.client.register(DidChangeConfigurationNotification.type, undefined);
-	}
-	if (hasWorkspaceFolderCapability) {
-		connection.workspace.onDidChangeWorkspaceFolders(_event => {
-			connection.console.log('Workspace folder change event received.');
-		});
-	}
+    if (hasConfigurationCapability) {
+        // Register for all configuration changes.
+        connection.client.register(DidChangeConfigurationNotification.type, undefined);
+    }
+    if (hasWorkspaceFolderCapability) {
+        connection.workspace.onDidChangeWorkspaceFolders(_event => {
+            connection.console.log('Workspace folder change event received.');
+        });
+    }
 
-	globalSettings = await connection.workspace.getConfiguration({
-		section: 'amisLanguageServer'
-	});
+    globalSettings = await connection.workspace.getConfiguration({
+        section: 'amisLanguageServer'
+    });
 
-	sls.configure(globalSettings);
+    sls.configure(globalSettings);
 });
 
 
@@ -113,118 +113,118 @@ connection.onInitialized(async () => {
 let documentSettings: Map<string, Thenable<AmisConfigSettings>> = new Map();
 
 connection.onDidChangeConfiguration(async (change) => {
-	if (hasConfigurationCapability) {
-		// Reset all cached document settings
-		documentSettings.clear();
-		globalSettings = await connection.workspace.getConfiguration({
-			section: 'amisLanguageServer'
-		})
-	} else {
-		globalSettings = <AmisConfigSettings>(
-			(change.settings.amisLanguageServer || defaultSettings)
-		);
-	}
+    if (hasConfigurationCapability) {
+        // Reset all cached document settings
+        documentSettings.clear();
+        globalSettings = await connection.workspace.getConfiguration({
+            section: 'amisLanguageServer'
+        })
+    } else {
+        globalSettings = <AmisConfigSettings>(
+            (change.settings.amisLanguageServer || defaultSettings)
+        );
+    }
 
-	console.log('onDidChangeConfiguration', globalSettings);
-	sls.configure(globalSettings);
-	// Revalidate all open text documents
-	documents.all().forEach(validateTextDocument);
+    console.log('onDidChangeConfiguration', globalSettings);
+    sls.configure(globalSettings);
+    // Revalidate all open text documents
+    documents.all().forEach(validateTextDocument);
 });
 
 function getDocumentSettings(resource: string): Thenable<AmisConfigSettings> {
-	if (!hasConfigurationCapability) {
-		return Promise.resolve(globalSettings);
-	}
-	let result = documentSettings.get(resource);
-	if (!result) {
-		result = connection.workspace.getConfiguration({
-			scopeUri: resource,
-			section: 'amisLanguageServer'
-		});
-		documentSettings.set(resource, result);
-	}
-	return result;
+    if (!hasConfigurationCapability) {
+        return Promise.resolve(globalSettings);
+    }
+    let result = documentSettings.get(resource);
+    if (!result) {
+        result = connection.workspace.getConfiguration({
+            scopeUri: resource,
+            section: 'amisLanguageServer'
+        });
+        documentSettings.set(resource, result);
+    }
+    return result;
 }
 
 // Only keep settings for open documents
 documents.onDidClose(e => {
-	documentSettings.delete(e.document.uri);
-	// remove document from language modes cache
+    documentSettings.delete(e.document.uri);
+    // remove document from language modes cache
 });
 
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
 documents.onDidChangeContent(change => {
-	// update amis language modes
-	validateTextDocument(change.document);
-	events.emit(EventTypes.fileChange, change);
+    // update amis language modes
+    validateTextDocument(change.document);
+    events.emit(EventTypes.fileChange, change);
 });
 
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
-	// In this simple example we get the settings for every validate run.
-	let settings = await getDocumentSettings(textDocument.uri);
+    // In this simple example we get the settings for every validate run.
+    let settings = await getDocumentSettings(textDocument.uri);
 
-	// The validator creates diagnostics for all uppercase words length 2 and more
-	let text = textDocument.getText();
-	let m: RegExpExecArray | null;
+    // The validator creates diagnostics for all uppercase words length 2 and more
+    let text = textDocument.getText();
+    let m: RegExpExecArray | null;
 
-	let problems = 0;
-	let diagnostics: Diagnostic[] = [];
+    let problems = 0;
+    let diagnostics: Diagnostic[] = [];
 
-	// Send the computed diagnostics to VSCode.
-	connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
+    // Send the computed diagnostics to VSCode.
+    connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
 }
 
 connection.onDidChangeWatchedFiles(_change => {
-	// Monitored files have change in VSCode
-	connection.console.log('We received an file change event');
+    // Monitored files have change in VSCode
+    connection.console.log('We received an file change event');
 });
 
 // This handler provides the initial list of the completion items.
 connection.onCompletion(
-	(textDocumentPosition: TextDocumentPositionParams) => {
-		// The pass parameter contains the position of the text document in
-		// which code complete got requested. For the example we ignore this
-		// info and always provide the same completion items.
-		const document = documents.get(textDocumentPosition.textDocument.uri);
-		if (document) {
-			return sls.doComplete(document, textDocumentPosition.position);
-		}
-	}
+    (textDocumentPosition: TextDocumentPositionParams) => {
+        // The pass parameter contains the position of the text document in
+        // which code complete got requested. For the example we ignore this
+        // info and always provide the same completion items.
+        const document = documents.get(textDocumentPosition.textDocument.uri);
+        if (document) {
+            return sls.doComplete(document, textDocumentPosition.position);
+        }
+    }
 );
 
 
 connection.onHover(textDocumentPosition => {
-	const document = documents.get(textDocumentPosition.textDocument.uri);
-	if (document) {
-		return sls.doHover(document, textDocumentPosition.position);
-	}
+    const document = documents.get(textDocumentPosition.textDocument.uri);
+    if (document) {
+        return sls.doHover(document, textDocumentPosition.position);
+    }
 });
 
 connection.onCodeAction(codeActionParams => {
-	const document = documents.get(codeActionParams.textDocument.uri);
-	if (document) {
-		return sls.doCodeAction(document, codeActionParams.range);
-	}
+    const document = documents.get(codeActionParams.textDocument.uri);
+    if (document) {
+        return sls.doCodeAction(document, codeActionParams.range);
+    }
 });
 
 connection.onExecuteCommand(commandRequest => {
-	return sls.doExecuteCommand(commandRequest.command, commandRequest.arguments || [], connection);
+    return sls.doExecuteCommand(commandRequest.command, commandRequest.arguments || [], connection);
 });
 
 connection.onCompletionResolve(
-	async (item) => {
+    async (item) => {
 
-		const data = item.data;
-		if (data && data.languageId && data.uri) {
-			const document = documents.get(data.uri);
-			if (document) {
-				return await sls.doResolve(document, data.languageId, item) || item;
-			}
-		}
+        const data = item.data;
+        if (data && data.languageId && data.uri) {
+            const document = documents.get(data.uri);
+            if (document) {
+                return await sls.doResolve(document, data.languageId, item) || item;
+            }
+        }
 
-		return item;
-	}
+        return item;
+    }
 )
 
 // Make the text document manager listen on the connection

@@ -1,4 +1,4 @@
-import * as mocha from 'mocha';
+import 'mocha';
 import 'ts-node';
 import { assert } from "chai";
 
@@ -8,7 +8,7 @@ import { CompletionItemKind, CompletionList, Hover, MarkupContent, Position, Tex
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
 import * as ts from 'typescript';
-import { getDocumentRegions, parseAmisJSON } from '../src/modes/helpers/parser';
+import { getDocumentRegions, JSONMetaInfo, parseAmisJSON } from '../src/modes/helpers/parser';
 import { EmbeddedRegion } from '../src/embeddedSupport';
 import { getShadowLS } from '../src/languageService';
 import { AmisConfigSettings, defaultSettings } from '../src/AmisConfigSettings';
@@ -130,7 +130,7 @@ describe('test json ls hover', function () {
 
 function testParseRegions(
     code: string,
-    expected: EmbeddedRegion[],
+    expected: EmbeddedRegion<'json', JSONMetaInfo>[],
     setting: AmisConfigSettings = defaultSettings
 ) {
     const sourceFile = ts.createSourceFile('test.ts', code, ts.ScriptTarget.ESNext);
@@ -141,7 +141,7 @@ function testParseRegions(
 describe('parse text regions', function () {
     it('props in toplevel declaration', async function () {
         testParseRegions(`
-/** amis */	
+/** amis */
 const obj = {
     type: "page"
 };`,
@@ -154,10 +154,12 @@ const obj = {
                     schema: "amis",
                     schemaUri: "https://fex-team.github.io/amis-editor-demo/schema.json",
                     text: `
-            
+           
             {
     type: "page"
-}`}
+}`,
+                    meta: { properties: [] }
+                }
             ]);
     });
     it('props on exports', async function () {
@@ -185,7 +187,9 @@ export const schema = {
                {
     type: "page",
     body: "default exports"
-}`},
+}`,
+                    meta: { properties: [] }
+                },
                 {
                     start: 111,
                     end: 159,
@@ -203,7 +207,9 @@ export const schema = {
                       {
     type: "page",
     body: "named exports"
-}`}
+}`,
+                    meta: { properties: [] }
+                }
             ]);
     });
     it('props in function', async function () {
@@ -235,7 +241,9 @@ function test() {
                {
         type: "page",
         body: "declaration"
-    }`},
+    }`,
+                    meta: { properties: [] }
+                },
                 {
                     start: 136,
                     end: 192,
@@ -255,7 +263,9 @@ function test() {
            {
         type: "page",
         body: "new value"
-    }`}
+    }`,
+                    meta: { properties: [] }
+                }
             ]);
     });
 });
@@ -263,23 +273,25 @@ function test() {
 describe('parse text regions with custom setting', function () {
     it('props in toplevel declaration', async function () {
         testParseRegions(`
-/** kemis */	
+/** kemis */
 const obj = {
     type: "page"
 };`,
             [
                 {
-                    start: 26,
-                    end: 47,
+                    start: 25,
+                    end: 46,
                     type: 'json',
                     languageId: 'amisjson',
                     schema: "kemis",
                     schemaUri: "http://localhost:8001/schema.json",
                     text: `
-             
+            
             {
     type: "page"
-}`}
+}`,
+                    meta: { properties: [] }
+                },
             ],
             customSettings);
     });
@@ -332,7 +344,7 @@ describe('get amisjson hover at point', function () {
 
     after(() => {
         console.log('suite done');
-        sls.dispose();        
+        sls.dispose();
     });
 
     it('get hover at object literal', async function () {
@@ -426,7 +438,7 @@ describe('get kemis hover at point', function () {
 
     after(() => {
         console.log('suite done');
-        sls.dispose();        
+        sls.dispose();
     });
 
     it('get hover at object literal', async function () {
