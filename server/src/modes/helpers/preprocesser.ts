@@ -113,6 +113,7 @@ export function patchJsonAst(jsonDocument: JSONDocumentOrigin, embeddedRegion: E
                             offset: propertyInfo.value.range.pos,
                             length: propertyInfo.value.range.end - propertyInfo.value.range.pos,
                             value: propertyInfo.value.value,
+                            parent: node
                         } as StringASTNode;
                     }
                 }
