@@ -106,7 +106,7 @@ export function patchJsonAst(jsonDocument: JSONDocumentOrigin, embeddedRegion: E
                     // 修正json
                     const propertyInfo = embeddedRegion.meta!.properties
                         .filter(property => (property.range.pos <= node.offset) && property.range.end >= (node.offset + node.length)).slice(-1)[0];
-                    console.log('patch propertyInfo', propertyInfo, embeddedRegion.meta!.properties, { pos: node.offset, end: node.offset + node.length });
+
                     if (propertyInfo) {
                         (node as any).valueNode = {
                             type: 'string',

@@ -147,8 +147,8 @@ const obj = {
 };`,
             [
                 {
-                    start: 25,
-                    end: 46,
+                    start: 24,
+                    end: 45,
                     type: 'json',
                     languageId: 'amisjson',
                     schema: "amis",
@@ -295,6 +295,31 @@ const obj = {
             ],
             customSettings);
     });
+    it('props in call params', async function () {
+
+        testParseRegions(`
+/** kemis */
+render({
+    type: "page"
+});`,
+            [
+                {
+                    start: 21,
+                    end: 41,
+                    type: 'json',
+                    languageId: 'amisjson',
+                    schema: "kemis",
+                    schemaUri: "http://localhost:8001/schema.json",
+                    text: `
+            
+       {
+    type: "page"
+}`,
+                    meta: { properties: [] }
+                },
+            ],
+            customSettings);
+    });
 });
 
 function testGetDocumentAtPoint(code: string, position: Position, languageId: string) {
@@ -343,7 +368,6 @@ describe('get amisjson hover at point', function () {
     });
 
     after(() => {
-        console.log('suite done');
         sls.dispose();
     });
 
@@ -437,7 +461,6 @@ describe('get kemis hover at point', function () {
     });
 
     after(() => {
-        console.log('suite done');
         sls.dispose();
     });
 

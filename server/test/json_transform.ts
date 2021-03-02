@@ -99,8 +99,6 @@ describe('test test region parser', function () {
     it(' simple ', async function () {
         const regions = parseAmisJSON(sampleCode1, defaultSettings);
 
-        console.log(regions);
-
         assert.deepEqual(regions, [
             {
                 start: 22,

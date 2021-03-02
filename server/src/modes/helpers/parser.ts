@@ -57,12 +57,12 @@ export function parseAmisJSON(content: string, config: AmisConfigSettings) {
                 function visit(node: ts.Node): ts.Node {
                     if (ts.isPropertyAssignment(node)) {
                         // console.log('isPropertyAssignment', node.getText(sourceFile));
-                        
+
                         if (node.initializer) {
                             const value = node.initializer.getText(sourceFile);
                             if (ts.isStringLiteralLike(node.initializer) && value[0] !== '\"') {
                                 // console.log('property start:', node.pos, node.name.pos);
-                                
+
                                 properties.push({
                                     range: { pos: node.pos, end: node.end },
                                     key: {
@@ -103,6 +103,22 @@ export function parseAmisJSON(content: string, config: AmisConfigSettings) {
      */
     function nodeTypeReader<T extends ts.Node>(context: ts.TransformationContext) {
         return function (rootNode: T) {
+
+            function createFindObjectLiteralExpression(schema: string) {
+                const ret = function (node: ts.Node): ts.VisitResult<ts.Node> {
+                    if (ts.isObjectLiteralExpression(node)) {
+                        addCodeToRegion(node, schema);
+                        return;
+                    };
+                    try {
+                        return ts.visitEachChild(node, ret, context);
+                    } catch (e) {
+                        console.log('error code ::', node.getText(sourceFile));
+                    }
+                }
+                return ret
+            }
+
             function visit(node: ts.Node): ts.VisitResult<ts.Node> {
                 if ((node as any).jsDoc) {
                     let schema = '';
@@ -149,9 +165,11 @@ export function parseAmisJSON(content: string, config: AmisConfigSettings) {
                                     return;
                                 }
                             }
-                        } else {
-                            console.log("other Visiting " + ts.SyntaxKind[node.kind]);
                         }
+
+                        const visitor = createFindObjectLiteralExpression(schema);
+                        console.log("other Visiting " + ts.SyntaxKind[node.kind]);
+                        return ts.visitEachChild(node, visitor, context);
                     }
                 }
                 return ts.visitEachChild(node, visit, context);

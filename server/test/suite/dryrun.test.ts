@@ -20,6 +20,17 @@ export default {
 export default {
     type: "pa|ge"
 }
+
+/** kemis-h5-test */
+render({
+    type: 'form',
+    "className": '',
+    "controls": [{
+        "type": "text",
+        label: "",
+        name: "asdasd"
+    }]
+})
 `);
 
         await new Promise((resolve) => setTimeout(resolve, 1000000000));
